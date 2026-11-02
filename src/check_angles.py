@@ -33,7 +33,7 @@ def cam_at(toe, slide):
 
 
 ok = True
-for phi in (0, 10, 20, 30, 40, 50):
+for phi in (0, 10, 20, 28, 30, 40, 50):
     toe = phi / 2
     slide = B.FIN_MID * math.tan(math.radians(toe)) - (B.AXIS_X - B.MONITOR_W)
     lm = [place(m, -1, toe, slide) for m in L.values()]

@@ -42,7 +42,7 @@ EXT_OVER = 177.8       # shield continues this far past the monitor's outer side
 EXT_DROP = 127.0       # and this far below the top edge, beside the monitor (5 in)
 BACK_RIB = 10.0        # stiffening ribs on the sun-facing back of the extension
 
-TOE_DEG = 15.0         # nominal turn of each monitor toward you; the spine adapts anyway
+TOE_DEG = 14.0         # each monitor's turn toward you: measured 152 deg open angle -> (180-152)/2
 KNUCKLE_R = 5.0
 KNUCKLE_CLEAR = 0.5
 KNUCKLE_GAP = 0.5
@@ -458,6 +458,19 @@ LENS_ABOVE_SHELF = 30.0
 SHELF_PIVOT_Y = 2.0                        # the plate tilts about this line, just behind the screen face
 
 
+def shelf_aim():
+    """Yaw and horizontal distance from the webcam to your eyes. You sit on the bisector
+    between the monitors, EYE_DIST in front of the corner where they meet. In the left
+    panel's frame that bisector runs at TOE_DEG toward -X from straight ahead (-Y)."""
+    t = math.radians(TOE_DEG)
+    ex, ey = -EYE_DIST * math.sin(t), -EYE_DIST * math.cos(t)
+    dx, dy = ex - CAM_U, ey - CAM_V
+    return math.atan2(-dx, -dy), math.hypot(dx, dy)   # yaw > 0 turns the camera toward -X
+
+
+SHELF_YAW, AIM_DIST = shelf_aim()
+
+
 def shelf_tilt_and_lift():
     """Solve tilt and lift together: lift keeps the tilted plate 1 mm above the right
     shield's front lip (which can reach 30 mm in front of the screens at 50 deg), and the
@@ -466,17 +479,28 @@ def shelf_tilt_and_lift():
     for _ in range(20):
         lift = 1.0 + 30.0 * math.tan(a)
         lens_z = WALL + lift + SHELF_T + LENS_ABOVE_SHELF
-        a = math.atan2(lens_z + SCREEN_CENTRE_DROP, EYE_DIST - CAM_V)
+        a = math.atan2(lens_z + SCREEN_CENTRE_DROP, AIM_DIST)
     return a, lift
 
 
 SHELF_TILT, SHELF_LIFT = shelf_tilt_and_lift()
 
 
+def tilt_matrix(z0):
+    """3x4 rotation that pitches the plate down by SHELF_TILT toward the aim direction,
+    about a horizontal axis through the webcam hole's line on the pivot."""
+    f = np.array([-math.sin(SHELF_YAW), -math.cos(SHELF_YAW), 0.0])   # camera forward
+    a = np.cross([0, 0, 1.0], f)                                       # tilt axis
+    a /= np.linalg.norm(a)
+    th = SHELF_TILT
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    R = np.eye(3) + math.sin(th) * K + (1 - math.cos(th)) * K @ K
+    P = np.array([MONITOR_W + CAM_U, SHELF_PIVOT_Y, z0])
+    return np.c_[R, P - R @ P]
+
+
 def tilt_about_pivot(m, z0):
-    """Rotate about the X-parallel line (Y=SHELF_PIVOT_Y, Z=z0); the front goes down."""
-    return (m.translate([0, -SHELF_PIVOT_Y, -z0]).rotate([math.degrees(SHELF_TILT), 0, 0])
-            .translate([0, SHELF_PIVOT_Y, z0]))
+    return m.transform(tilt_matrix(z0).tolist())
 
 
 def camera_shelf():
@@ -505,6 +529,18 @@ def camera_shelf():
         plate = plate + lip.extrude(SHELF_LIP + 0.01).translate([0, 0, z0 + SHELF_T - 0.01])
     hole = CrossSection.circle(HOLE_D / 2, 48).translate([MONITOR_W + CAM_U, CAM_V])
     plate = plate - hole.extrude(SHELF_T + SHELF_LIP + 4).translate([0, 0, z0 - 2])
+    # Aiming line: a 0.6 mm groove from the hole toward you. Line the camera's front up
+    # square to it before tightening the screw.
+    fx, fy = -math.sin(SHELF_YAW), -math.cos(SHELF_YAW)
+    cx, cy = MONITOR_W + CAM_U, CAM_V
+    L, w = 16.0, 0.6
+    nx, ny = -fy, fx
+    s0 = HOLE_D / 2 + 2.0
+    groove = ccw([(cx + fx * s0 + nx * w, cy + fy * s0 + ny * w),
+                  (cx + fx * (s0 + L) + nx * w, cy + fy * (s0 + L) + ny * w),
+                  (cx + fx * (s0 + L) - nx * w, cy + fy * (s0 + L) - ny * w),
+                  (cx + fx * s0 - nx * w, cy + fy * s0 - ny * w)])
+    plate = plate - groove.extrude(1.0).translate([0, 0, z0 + SHELF_T - 0.6])
     plate = tilt_about_pivot(plate, z0)
     above = tilt_about_pivot(box(-5000, 5000, -5000, SHELF_PIVOT_Y, z0 + SHELF_T, z0 + 200), z0)
     # flat back strip over the saddle, fused to the fin and the saddle's top plate
