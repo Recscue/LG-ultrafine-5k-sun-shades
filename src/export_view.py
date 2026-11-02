@@ -35,7 +35,8 @@ def webcam_local():
     lens = trimesh.creation.cylinder(radius=9, height=2, sections=48)
     lens.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
     lens.apply_translation([cx, cy - CAM_D / 2 - 0.9, z0 + 6 + (CAM_H - 6) / 2])
-    yaw = trimesh.transformations.rotation_matrix(B.SHELF_YAW, [0, 0, 1], [cx, cy, 0])
+    # SHELF_YAW > 0 turns the camera toward -X, which is a clockwise turn seen from above
+    yaw = trimesh.transformations.rotation_matrix(-B.SHELF_YAW, [0, 0, 1], [cx, cy, 0])
     T = np.vstack([B.tilt_matrix(B.WALL + B.SHELF_LIFT), [0, 0, 0, 1]])
     for m in (body, foot, lens):
         m.apply_transform(yaw)
