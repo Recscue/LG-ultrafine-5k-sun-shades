@@ -23,7 +23,7 @@
   <button data-view="spine">Spine</button>
   <button data-view="seam">Seam close-up</button>
   <button data-view="seamBack">Seam from behind</button>
-  <button id="explode">Explode pieces</button>
+  <button data-view="exploded">Exploded</button>
   <button id="monitors" class="on">Monitors</button>
 </div>
 <div id="note">Drag to orbit, scroll to zoom, right-drag to pan. Units are mm.</div>
@@ -61,14 +61,17 @@ const views = {
   camUnder: [T(-150, -330, -150), T(-30, -20, 0)],
   sideBack: [T(-1500, 900, 150), T(-560, 100, -120)],
 };
+views.exploded = [T(0, -3300, 1100), T(0, 60, 40)];
+let monitorsOn = true;
 function go(v) {
   const [eye, tgt] = views[v];
   camera.position.copy(eye); controls.target.copy(tgt); controls.update();
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  setExploded(v === 'exploded');
 }
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
 
-const toe = 15 * Math.PI / 180;
+const toe = 14 * Math.PI / 180;   // measured 152 deg between the monitors
 const dirL = new THREE.Vector3(Math.cos(toe), 0, -Math.sin(toe));
 const dirR = new THREE.Vector3(Math.cos(toe), 0, Math.sin(toe));
 const order = ['extension', 'outer', 'middle-camera', 'inner'];
@@ -88,32 +91,45 @@ new GLTFLoader().load('assembly.glb?v=' + Date.now(), gltf => {
     const m = o.name.match(/^shield_(left|right)_(.+)$/);
     if (m) {
       const k = order.indexOf(m[2]);
-      const off = (m[1] === 'left' ? dirL.clone().multiplyScalar(-(3 - k) * 45)
-                                    : dirR.clone().multiplyScalar((3 - k) * 45));
+      // each piece slides away from the spine along its own panel: GAP between pieces,
+      // SPLIT between the two monitors' halves; alternate pieces lift so the joints read
+      const GAP = 110, SPLIT = 90, d = (3 - k) * GAP + SPLIT;
+      const off = (m[1] === 'left' ? dirL.clone().multiplyScalar(-d) : dirR.clone().multiplyScalar(d));
+      off.y += (k % 2) * 40;
       shield.push({ o, base: o.position.clone(), off });
     } else monitors.push(o);
   });
   scene.add(gltf.scene);
   const q = new URLSearchParams(location.search);
   go(q.get('view') || 'front');
-  if (q.get('explode')) document.getElementById('explode').click();
   if (q.get('nomon')) document.getElementById('monitors').click();
   if (q.get('shot')) document.querySelectorAll('#bar,#note').forEach(e => e.style.display = 'none');
 });
 
-document.getElementById('explode').onclick = e => {
-  exploded = !exploded; e.target.classList.toggle('on', exploded);
-  shield.forEach(s => s.o.position.copy(s.base).add(exploded ? s.off : new THREE.Vector3()));
-};
+let anim = null;
+function setExploded(on) {
+  if (on === exploded) return;
+  exploded = on;
+  // monitors and webcam would hide the gaps, so the exploded tab hides them
+  monitors.forEach(o => o.visible = on ? false : monitorsOn);
+  const from = shield.map(s => s.o.position.clone());
+  const to = shield.map(s => s.base.clone().add(on ? s.off : new THREE.Vector3()));
+  const t0 = performance.now();
+  anim = () => {
+    const k = Math.min(1, (performance.now() - t0) / 600), e = k * k * (3 - 2 * k);
+    shield.forEach((s, i) => s.o.position.lerpVectors(from[i], to[i], e));
+    if (k === 1) anim = null;
+  };
+}
 document.getElementById('monitors').onclick = e => {
-  const on = e.target.classList.toggle('on');
-  monitors.forEach(o => o.visible = on);
+  monitorsOn = e.target.classList.toggle('on');
+  if (!exploded) monitors.forEach(o => o.visible = monitorsOn);
 };
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
-renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+renderer.setAnimationLoop(() => { if (anim) anim(); controls.update(); renderer.render(scene, camera); });
 </script>
 </body>
 </html>
