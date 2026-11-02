@@ -22,7 +22,7 @@ from manifold3d import CrossSection, Manifold, Mesh, JoinType
 # Parameters (mm)
 # --------------------------------------------------------------------------------------
 EDGE_T = 25.0          # monitor thickness at the top edge (MEASURE with the fit test)
-REAR_TAPER_DEG = 10.0  # back of the panel slopes outward ~10 deg going down
+REAR_TAPER_DEG = 17.0  # back of the panel slopes out 17 deg (manual drawings: 25 -> 53.8 mm over 94 mm)
 CLEAR = 0.3
 WALL = 2.4
 FRONT_LIP = 6.0        # camera centre is ~9 mm below the top edge
@@ -341,16 +341,16 @@ def panel(parity):
     # One continuous rim: the front lip runs along the top, around the rounded corner and
     # down the outer edge; the back rib follows the outer edge and the same corner.
     sil = outline()
-    keep = rect(-EXT_OVER - 1, 5000, -EXT_DROP, HEIGHT + 1)
-    front_band = (sil - sil.offset(-FIN_T, JoinType.Miter)) ^ rect(-EXT_OVER - 1, AXIS_X - KNUCKLE_R - 4,
-                                                                  -EXT_DROP, HEIGHT + 1)
-    back_band = (sil - sil.offset(-3.0, JoinType.Miter)) ^ rect(-EXT_OVER - 1, AXIS_X - KNUCKLE_R - 4,
-                                                               -EXT_DROP, HEIGHT + 1)
-    front_rim = xz_extrude(front_band ^ keep, FIN_F - RIB, FIN_B)
-    back_rim = xz_extrude(back_band ^ keep, FIN_B - 0.2, FIN_B + BACK_RIB)
-    mid_rib = box(-EXT_OVER, -1.0, FIN_B - 0.2, FIN_B + BACK_RIB, 90.0, 93.0)
-    low_rib = box(-EXT_OVER, -1.0, FIN_B - 0.2, FIN_B + BACK_RIB, -EXT_DROP, -EXT_DROP + 3)
-    p = body + fin + ext_low + front_rim + back_rim + mid_rib + low_rib
+    # Rims follow the whole edge, both faces: top, both rounded corners, outer side, and the
+    # extension's bottom. They stop short of the spine, and along the bottom they run only
+    # under the extension (X < -1), never under the monitor.
+    rim_zone = (rect(-EXT_OVER - 1, AXIS_X - KNUCKLE_R - 4, -EXT_DROP + 12, HEIGHT + 1)
+                + rect(-EXT_OVER - 1, -1.0, -EXT_DROP - 1, HEIGHT + 1))
+    front_band = (sil - sil.offset(-FIN_T, JoinType.Miter)) ^ rim_zone
+    back_band = (sil - sil.offset(-3.0, JoinType.Miter)) ^ rim_zone
+    front_rim = xz_extrude(front_band, FIN_F - RIB, FIN_B)
+    back_rim = xz_extrude(back_band, FIN_B - 0.2, FIN_B + BACK_RIB)
+    p = body + fin + ext_low + front_rim + back_rim
     lat = Lattice(-EXT_OVER - 10, AXIS_X + 10, -EXT_DROP - 10, HEIGHT + 10)
     p = p + relief(lat)
     p = p ^ xz_extrude(sil)
@@ -518,15 +518,17 @@ def camera_shelf():
 
 
 def outline():
-    """Panel silhouette in (X, Z) with the outer top corner rounded. The extension prints
-    with its outer edge on the bed, so the arc stops at 45 deg and finishes as a 45 deg
-    tangent chamfer at the bed side: no overhang steeper than 45 deg."""
+    """Panel silhouette in (X, Z): the extension's outer top AND bottom corners are rounded
+    with the same radius. The bottom edge sits at -EXT_DROP; below the monitor's top edge
+    only the extension (X < 0) and the clip lips (which stop at -REAR_LIP) reach down."""
     xo, R = -EXT_OVER, CORNER_R
-    cx, cz = xo + R, HEIGHT - R
-    arc = [(cx + R * math.cos(math.radians(a)), cz + R * math.sin(math.radians(a)))
+    zb = -EXT_DROP
+    top = [(xo + R + R * math.cos(math.radians(a)), HEIGHT - R + R * math.sin(math.radians(a)))
            for a in np.linspace(90, 180, 72)]
-    pts = [(xo, -2000.0), (5000.0, -2000.0), (5000.0, HEIGHT)] + arc
-    return CrossSection([pts])
+    bot = [(xo + R + R * math.cos(math.radians(a)), zb + R + R * math.sin(math.radians(a)))
+           for a in np.linspace(180, 270, 72)]
+    pts = [(5000.0, zb), (5000.0, HEIGHT)] + top + bot
+    return ccw(pts)
 
 
 def pieces(parity):

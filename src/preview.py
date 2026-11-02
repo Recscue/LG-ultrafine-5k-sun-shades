@@ -17,12 +17,28 @@ OUT = B.OUT
 TOE = B.TOE_DEG
 
 
+# Rear shell from the LG manual drawings, scaled to the 625.6 x 375.1 x 53.8 mm spec:
+# 25 mm at every edge, sloping out on all four sides to a flat back plate
+# 305 mm wide x 178 mm tall whose top sits 94 mm below the panel's top edge.
+REAR_PLATE_W, REAR_PLATE_H, REAR_PLATE_TOP = 305.0, 178.0, 94.0
+MONITOR_D = 53.8
+
+
+def monitor_shell():
+    W, H = B.MONITOR_W, 375.1
+    x0, x1 = (W - REAR_PLATE_W) / 2, (W + REAR_PLATE_W) / 2
+    z1, z0 = -REAR_PLATE_TOP, -REAR_PLATE_TOP - REAR_PLATE_H
+    pts = [(x, y, z) for x in (0, W) for y in (0, B.EDGE_T) for z in (0, -H)]
+    pts += [(x, MONITOR_D, z) for x in (x0, x1) for z in (z0, z1)]
+    return trimesh.convex.convex_hull(np.array(pts, float))
+
+
 def monitor_mesh():
     W, H = B.MONITOR_W, 375.1
-    panel = trimesh.creation.box([W, B.EDGE_T, H]); panel.apply_translation([W / 2, B.EDGE_T / 2, -H / 2])
-    back = trimesh.creation.box([W * 0.52, 29, H * 0.48]); back.apply_translation([W / 2, B.EDGE_T + 14, -H * 0.52])
+    panel = monitor_shell()
+    back = trimesh.creation.box([1, 1, 1]); back.apply_translation([W / 2, 1, -H / 2])
     screen = trimesh.creation.box([596.7, 1, 335.7]); screen.apply_translation([W / 2, -0.6, -21 - 335.7 / 2])
-    neck = trimesh.creation.box([49, 70, 200]); neck.apply_translation([W / 2, 110, -H - 30])
+    neck = trimesh.creation.box([49, 70, 300]); neck.apply_translation([W / 2, MONITOR_D + 34, -H / 2 - 120])
     return [(panel, "#d9d9db"), (back, "#cfcfd2"), (screen, "#1b1f27"), (neck, "#c8c8cc")]
 
 
