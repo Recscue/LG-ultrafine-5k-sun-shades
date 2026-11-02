@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+out/
+out_mjf/
+src/out/
+src/out_mjf/

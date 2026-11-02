@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Monitor sun shield</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #eef0f3; font: 14px/1.4 -apple-system, system-ui, sans-serif; color: #222; }
+  #bar { position: fixed; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; }
+  button { border: 1px solid #c4c8ce; background: #fff; border-radius: 16px; padding: 6px 12px; cursor: pointer; }
+  button.on { background: #232f3e; color: #fff; border-color: #232f3e; }
+  #note { position: fixed; bottom: 12px; left: 12px; color: #555; z-index: 2; }
+  canvas { display: block; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="bar">
+  <button data-view="front">Front</button>
+  <button data-view="back">Back (sun side)</button>
+  <button data-view="spine">Spine</button>
+  <button data-view="seam">Seam close-up</button>
+  <button data-view="seamBack">Seam from behind</button>
+  <button id="explode">Explode pieces</button>
+  <button id="monitors" class="on">Monitors</button>
+</div>
+<div id="note">Drag to orbit, scroll to zoom, right-drag to pan. Units are mm.</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeef0f3);
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 5, 20000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-600, 900, 1400); scene.add(sun);
+const rim = new THREE.DirectionalLight(0xffffff, 0.8); rim.position.set(900, 300, -1200); scene.add(rim);
+
+// our frame: x across, y depth (+ back), z up  ->  three: (x, z, -y)
+const T = (x, y, z) => new THREE.Vector3(x, z, -y);
+const views = {
+  front:    [T(250, -1900, 520),  T(0, 120, -40)],
+  back:     [T(-500, 1700, 700),  T(0, 0, -20)],
+  spine:    [T(-140, -420, 260),  T(0, 30, 110)],
+  seam:     [T(-240, -420, 150),  T(-190, 20, 100)],
+  seamBack: [T(-260, 520, 160),   T(-190, 20, 100)],
+  corner:   [T(-1010, -620, 330), T(-770, -200, 150)],
+  cornerBack: [T(-1050, 250, 330), T(-770, -200, 150)],
+  cam:      [T(-180, -420, 200),  T(0, -5, 20)],
+  camTop:   [T(-60, -260, 420),   T(0, -5, 10)],
+  camUnder: [T(-150, -330, -150), T(-30, -20, 0)],
+};
+function go(v) {
+  const [eye, tgt] = views[v];
+  camera.position.copy(eye); controls.target.copy(tgt); controls.update();
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+}
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
+
+const toe = 15 * Math.PI / 180;
+const dirL = new THREE.Vector3(Math.cos(toe), 0, -Math.sin(toe));
+const dirR = new THREE.Vector3(Math.cos(toe), 0, Math.sin(toe));
+const order = ['extension', 'outer', 'middle-camera', 'inner'];
+const shield = [], monitors = [];
+let exploded = false;
+
+new GLTFLoader().load('assembly.glb?v=' + Date.now(), gltf => {
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const src = o.material.color ? o.material.color.clone() : new THREE.Color(0x5c6674);
+    const isShield = o.name.startsWith('shield_');
+    o.material = new THREE.MeshStandardMaterial({
+      color: o.geometry.attributes.color ? 0xffffff : src,
+      vertexColors: !!o.geometry.attributes.color,
+      flatShading: true, roughness: isShield ? 0.75 : 0.5, metalness: 0.05,
+    });
+    const m = o.name.match(/^shield_(left|right)_(.+)$/);
+    if (m) {
+      const k = order.indexOf(m[2]);
+      const off = (m[1] === 'left' ? dirL.clone().multiplyScalar(-(3 - k) * 45)
+                                    : dirR.clone().multiplyScalar((3 - k) * 45));
+      shield.push({ o, base: o.position.clone(), off });
+    } else monitors.push(o);
+  });
+  scene.add(gltf.scene);
+  const q = new URLSearchParams(location.search);
+  go(q.get('view') || 'front');
+  if (q.get('explode')) document.getElementById('explode').click();
+  if (q.get('nomon')) document.getElementById('monitors').click();
+  if (q.get('shot')) document.querySelectorAll('#bar,#note').forEach(e => e.style.display = 'none');
+});
+
+document.getElementById('explode').onclick = e => {
+  exploded = !exploded; e.target.classList.toggle('on', exploded);
+  shield.forEach(s => s.o.position.copy(s.base).add(exploded ? s.off : new THREE.Vector3()));
+};
+document.getElementById('monitors').onclick = e => {
+  const on = e.target.classList.toggle('on');
+  monitors.forEach(o => o.visible = on);
+};
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
