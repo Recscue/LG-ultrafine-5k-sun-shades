@@ -9,7 +9,7 @@ It clips onto each monitor's top edge, rises 8 in, reaches 7 in past each outer 
 
 ## Files
 
-- `stl/`: the 9 print files, numbered from each monitor's outer edge toward the middle. Print `0_fit-test-clip_print-first.stl` first.
+- `stl/`: the 11 print files plus `stl/test-coupons/`, numbered from each monitor's outer edge toward the middle. Print `0_fit-test-clip_print-first.stl` first.
 - `PRINTING.md`: print settings, assembly steps and the measurements to check before printing.
 - `renders/`: still views of the spine, seams, corner and webcam shelf.
 - `src/`: the parametric model. `python src/build.py` regenerates the STLs (needs `manifold3d`, `trimesh`, `numpy`, `scipy`).

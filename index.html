@@ -90,12 +90,14 @@ new GLTFLoader().load('assembly.glb?v=' + Date.now(), gltf => {
     });
     const m = o.name.match(/^shield_(left|right)_(.+)$/);
     if (m) {
-      const k = order.indexOf(m[2]);
+      const lower = m[2] === 'extension-lower';
+      const k = order.indexOf(lower ? 'extension' : m[2]);
       // each piece slides away from the spine along its own panel: GAP between pieces,
       // SPLIT between the two monitors' halves; alternate pieces lift so the joints read
       const GAP = 110, SPLIT = 90, d = (3 - k) * GAP + SPLIT;
       const off = (m[1] === 'left' ? dirL.clone().multiplyScalar(-d) : dirR.clone().multiplyScalar(d));
       off.y += (k % 2) * 40;
+      if (lower) off.y -= 110;   // bottom half of the side extension drops away from its top
       shield.push({ o, base: o.position.clone(), off });
     } else monitors.push(o);
   });

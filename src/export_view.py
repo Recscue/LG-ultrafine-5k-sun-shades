@@ -10,7 +10,7 @@ import build as B
 import preview as P
 
 VIEW = os.path.join(os.path.dirname(__file__), "viewer")
-COLORS = {"extension": (92, 102, 116), "outer": (98, 108, 122), "middle-camera": (92, 102, 116),
+COLORS = {"extension": (92, 102, 116), "extension-lower": (98, 108, 122), "outer": (98, 108, 122), "middle-camera": (92, 102, 116),
           "inner": (98, 108, 122)}
 
 

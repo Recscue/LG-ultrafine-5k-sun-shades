@@ -50,9 +50,13 @@ KNUCKLES = 7
 PIN_HOLE_D = 2.0       # a length of 1.75 mm filament is the pin
 
 MJF = os.environ.get("MJF") == "1"   # JLC3DP MJF nylon: looser fits, walls > 1.2 mm
-JOINT_CLEAR = 0.2 if MJF else 0.1      # each side of every dovetail seam
+_FIT = os.environ.get("FIT")          # override for the joint test coupons
+# Each side of every dovetail seam. Bambu's own calibration guide shows a hole designed at
+# 6.0 mm printing at 5.9 mm, with a snug fit at +0.15 mm, so 0.1 mm per side would print
+# close to zero clearance. 0.15 is the P2S default; the coupon set tests 0.10-0.20.
+JOINT_CLEAR = float(_FIT) if _FIT else (0.2 if MJF else 0.15)
 LAP = 6.0              # back layer is cut straight, this far past the dovetail band
-LAP_CLEAR = 0.2 if MJF else 0.1        # gap between the overlapping layers, front to back
+LAP_CLEAR = JOINT_CLEAR                # gap between the overlapping layers, front to back
 LAP_SPLIT_FROM_FRONT = None   # where the two layers split, from the fin front
 
 # Facets: triangle lattice with vertical row lines h apart; seams sit on row lines
@@ -249,9 +253,50 @@ def region(left, right):
     Bk = _poly_region(lb, rb, JOINT_CLEAR)
     c = LAP_CLEAR / 2
     ys = FIN_F + LAP_SPLIT_FROM_FRONT if LAP_SPLIT_FROM_FRONT is not None else FIN_MID
+    return _compose(F, Bk)
+
+
+def _compose(F, Bk):
+    """Front layer from F, back layer from Bk, the shared middle from both."""
+    c = LAP_CLEAR / 2
+    ys = FIN_F + LAP_SPLIT_FROM_FRONT if LAP_SPLIT_FROM_FRONT is not None else FIN_MID
     front = F ^ box(-3000, 3000, -300, ys - c, -3000, 3000)
     back = Bk ^ box(-3000, 3000, ys + c, 300, -3000, 3000)
     return front + back + (F ^ Bk)
+
+
+# Horizontal seam splitting the side extension. It sits below the monitor's top edge,
+# where only the extension has material, so it never crosses a vertical seam.
+HSEAM_Z = -25.0        # seam base line
+HSEAM_TAIL = 10.0      # how far each tail reaches up into the top piece
+HSEAM_NECK = 16.0      # tail width at the seam line; flanks run at 45 deg, so the head
+                       # is 2*HSEAM_TAIL wider and no printed surface overhangs past 45 deg
+HSEAM_TAILS = 4
+
+
+def hseam_polyline():
+    x0, x1 = -EXT_OVER + 14.0, -14.0
+    pitch = (x1 - x0) / HSEAM_TAILS
+    z0, z1 = HSEAM_Z, HSEAM_Z + HSEAM_TAIL
+    pts = [(-3000.0, z0)]
+    for i in range(HSEAM_TAILS):
+        c = x0 + (i + 0.5) * pitch
+        n = HSEAM_NECK / 2
+        pts += [(c - n, z0), (c - n - HSEAM_TAIL, z1), (c + n + HSEAM_TAIL, z1), (c + n, z0)]
+    return pts + [(3000.0, z0)]
+
+
+def hregion(upper):
+    line = hseam_polyline()
+    zb = HSEAM_Z + HSEAM_TAIL + LAP     # back layer cut straight above the tails
+    if upper:
+        F = ccw(line + [(3000.0, 3000.0), (-3000.0, 3000.0)])
+        Bk = rect(-3000, 3000, zb, 3000)
+    else:
+        F = ccw(line + [(3000.0, -3000.0), (-3000.0, -3000.0)])
+        Bk = rect(-3000, 3000, -3000, zb)
+    return _compose(xz_extrude(F.offset(-JOINT_CLEAR, JoinType.Miter)),
+                    xz_extrude(Bk.offset(-JOINT_CLEAR, JoinType.Miter)))
 
 
 # --------------------------------------------------------------------------------------
@@ -572,7 +617,14 @@ def pieces(parity):
     s = [seam_polyline(lat, x0) for x0 in SEAMS]
     bounds = [(None, s[0]), (s[0], s[1]), (s[1], s[2]), (s[2], None)]
     names = ["extension", "outer", "middle-camera", "inner"]
-    return {n: p ^ region(a, b) for n, (a, b) in zip(names, bounds)}
+    out = {n: p ^ region(a, b) for n, (a, b) in zip(names, bounds)}
+    # The extension is 330 mm tall, longer than the P2S bed, so it splits again on a
+    # horizontal dovetail seam below the monitor's top edge: "extension" keeps the top,
+    # "extension-lower" the bottom.
+    ext = out["extension"]
+    out["extension"] = ext ^ hregion(upper=True)
+    out["extension-lower"] = ext ^ hregion(upper=False)
+    return out
 
 
 def mirror_right(m):
@@ -614,8 +666,10 @@ def main():
     left = pieces(parity=0)
     right = {n: mirror_right(m) for n, m in pieces(parity=1).items()}
     # orientation: extension's free outer edge down; inner piece's knuckles up
-    flips = {"left": {"extension": False, "outer": False, "middle-camera": False, "inner": False},
-             "right": {"extension": True, "outer": True, "middle-camera": True, "inner": True}}
+    flips = {"left": {"extension": False, "extension-lower": False, "outer": False,
+                      "middle-camera": False, "inner": False},
+             "right": {"extension": True, "extension-lower": True, "outer": True,
+                       "middle-camera": True, "inner": True}}
     for side, parts in (("left", left), ("right", right)):
         for n, m in parts.items():
             name = f"{side}_{n}.stl"

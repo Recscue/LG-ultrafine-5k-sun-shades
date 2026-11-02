@@ -9,14 +9,33 @@ The print files were renamed so each name says what the part is. The geometry is
 | New name | Old name | What it is |
 |---|---|---|
 | `0_fit-test-clip_print-first.stl` | `p2s_fit_test_clip.stl` | 20 mm slice of the clip, to check the fit first |
-| `left_1_side-extension.stl` | `p2s_left_extension.stl` | Left monitor, part past its outer side |
+| `left_1a_side-extension-top.stl` | `p2s_left_extension.stl` (top half) | Left monitor, part past its outer side, above the horizontal seam |
+| `left_1b_side-extension-bottom.stl` | `p2s_left_extension.stl` (bottom half) | Left monitor, part past its outer side, below the horizontal seam |
 | `left_2_outer.stl` | `p2s_left_outer.stl` | Left monitor, outer third |
 | `left_3_middle_monitor-camera-notch.stl` | `p2s_left_middle-camera.stl` | Left monitor, middle third, notch over the LG's built-in camera |
 | `left_4_inner_webcam-shelf_spine.stl` | `p2s_left_inner.stl` | Left monitor, inner third, Logitech webcam shelf and knuckles |
-| `right_1_side-extension.stl` | `p2s_right_extension.stl` | Right monitor, part past its outer side |
+| `right_1a_side-extension-top.stl` | `p2s_right_extension.stl` (top half) | Right monitor, part past its outer side, above the horizontal seam |
+| `right_1b_side-extension-bottom.stl` | `p2s_right_extension.stl` (bottom half) | Right monitor, part past its outer side, below the horizontal seam |
 | `right_2_outer.stl` | `p2s_right_outer.stl` | Right monitor, outer third |
 | `right_3_middle_monitor-camera-notch.stl` | `p2s_right_middle-camera.stl` | Right monitor, middle third, notch over the LG's built-in camera |
 | `right_4_inner_spine.stl` | `p2s_right_inner.stl` | Right monitor, inner third, knuckles |
+
+## Test the joints first
+
+Print `stl/test-coupons/` before the full set, in the same filament and process profile you'll use for the real parts. That's 12 small pieces, about 100 g of PETG. They're slices of the real seams, cut straight from the full model, at three clearances. The number of notches on each piece's edge marks its clearance:
+
+| Notches | Clearance per side |
+|---|---|
+| 1 | 0.10 mm |
+| 2 | 0.15 mm (the default the full set is built with) |
+| 3 | 0.20 mm |
+
+Each clearance has a horizontal-seam pair (`horiz-top`, `horiz-bottom`) and a vertical-seam pair (`vert-left`, `vert-right`). Press each pair together the way the real pieces go together, sliding the panel face on from the back. Pick the tightest clearance that goes together by hand without a mallet and has no visible gap at the front face. If that isn't 2 notches, rebuild the set with `FIT=0.10` or `FIT=0.20` in front of `python src/build.py`.
+
+Printing notes for the fit:
+- **Elephant foot compensation:** keep it on in Bambu Studio. Several pieces have a seam starting on the bed, and first-layer squish otherwise flares those tails.
+- **XY contour compensation:** if the coupons all come out tight or all loose, Bambu's [XY Hole / Contour compensation guide](https://wiki.bambulab.com/en/software/bambu-studio/xy-hole-contour-compensation) shows how to calibrate it per filament. Calibrate first, then re-print the coupons.
+- **Dry filament:** wet PETG extrudes unevenly and changes the fit.
 
 ## Parts
 

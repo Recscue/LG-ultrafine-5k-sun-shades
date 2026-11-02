@@ -73,7 +73,8 @@ def save(img, path, title):
 
 
 def main():
-    tones = {"extension": "#6b7684", "outer": "#707b89", "middle-camera": "#6b7684", "inner": "#707b89"}
+    tones = {"extension": "#6b7684", "extension-lower": "#707b89", "outer": "#707b89",
+             "middle-camera": "#6b7684", "inner": "#707b89"}
     items, placed = [], {}
     for side, parity in ((-1, 0), (1, 1)):
         for m, col in monitor_mesh():
