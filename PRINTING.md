@@ -57,7 +57,7 @@ The left inner piece carries a 3 mm triangular shelf that reaches 25 mm past the
 
 ## Before printing the set
 
-- **Edge thickness:** `EDGE_T` (25 mm) and the 17° back slope come from LG's dimension drawings. The clip has 0.3 mm of clearance plus a 0.6 mm grip bump.
+- **Edge thickness:** `EDGE_T` is 20 mm, measured with calipers on the real monitor (LG's drawing implied 25). The back slope, 19.8°, runs from there to the drawing's 53.8 mm depth at the back plate. The clip has 0.3 mm of clearance plus a 0.6 mm grip bump.
 - **Monitor angle:** `TOE_DEG` (15°) sets where the spine sits. Measure the straight-line distance between the two monitors' outer front corners, D, and set `TOE_DEG = degrees(acos(D / 1251.2))`. At 15°, D is about 1208 mm (47.6 in). Rebuild with your value before printing the inner pieces. Only the 15° fit has been checked.
 
 ## Rebuild

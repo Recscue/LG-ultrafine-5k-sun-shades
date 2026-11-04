@@ -21,8 +21,10 @@ from manifold3d import CrossSection, Manifold, Mesh, JoinType
 # --------------------------------------------------------------------------------------
 # Parameters (mm)
 # --------------------------------------------------------------------------------------
-EDGE_T = 25.0          # monitor thickness at the top edge (LG manual dimension drawing)
-REAR_TAPER_DEG = 17.0  # back of the panel slopes out 17 deg (manual drawings: 25 -> 53.8 mm over 94 mm)
+EDGE_T = 20.0          # monitor thickness at the top edge, measured with calipers 2026-11-04
+                       # (LG's drawing implied 25 mm; the real edge is 20)
+# The back slopes out to the drawing's 53.8 mm depth at the back plate, 94 mm down
+REAR_TAPER_DEG = math.degrees(math.atan((53.8 - EDGE_T) / 94.0))
 CLEAR = 0.3
 WALL = 2.4
 FRONT_LIP = 6.0        # camera centre is ~9 mm below the top edge
