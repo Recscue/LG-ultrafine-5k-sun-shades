@@ -64,7 +64,7 @@ LAP_SPLIT_FROM_FRONT = None   # where the two layers split, from the fin front
 # Facets: triangle lattice with vertical row lines h apart; seams sit on row lines
 ROW_H = (MONITOR_W / SEGMENTS) / 10       # 20.85 mm
 TRI_S = ROW_H / (math.sqrt(3) / 2)        # 24.1 mm edge
-TEX_MIN, TEX_MAX = 0.7, 3.4
+TEX_MIN, TEX_MAX = 0.4, 2.0   # facet depth; was 0.7-3.4, capped to cut ~half the texture plastic
 TEX_FADE = 10.0
 JITTER = 0.22
 SEED = 7
