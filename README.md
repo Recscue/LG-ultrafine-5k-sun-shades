@@ -10,7 +10,7 @@ It clips onto each monitor's top edge, rises 8 in, reaches 7 in past each outer 
 ## Files
 
 - `print-files/`: everything to print. Start with `print-files/READ-ME-FIRST.txt`.
-  - `step-1_test-prints/`: the fit-test clip and the joint test pieces, all on one plate.
+  - `step-1_test-prints/`: the joint test pieces, all on one plate.
   - `step-2_full-shield/`: one complete shield at each joint size (0.10, 0.15, 0.20 mm), split into `left-monitor/` and `right-monitor/`. Print only the folder matching the test piece that fit best.
 - `PRINTING.md`: print settings, assembly steps and the measurements to check before printing.
 - `renders/`: still views of the spine, seams, corner and webcam shelf.

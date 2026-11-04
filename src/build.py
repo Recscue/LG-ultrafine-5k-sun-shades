@@ -21,7 +21,7 @@ from manifold3d import CrossSection, Manifold, Mesh, JoinType
 # --------------------------------------------------------------------------------------
 # Parameters (mm)
 # --------------------------------------------------------------------------------------
-EDGE_T = 25.0          # monitor thickness at the top edge (MEASURE with the fit test)
+EDGE_T = 25.0          # monitor thickness at the top edge (LG manual dimension drawing)
 REAR_TAPER_DEG = 17.0  # back of the panel slopes out 17 deg (manual drawings: 25 -> 53.8 mm over 94 mm)
 CLEAR = 0.3
 WALL = 2.4

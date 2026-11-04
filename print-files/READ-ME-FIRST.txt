@@ -6,10 +6,6 @@ Filament: PETG (dry it first). Print everything in the same filament and setting
 STEP 1: TEST PRINTS (all on one plate)
 Folder: step-1_test-prints
 
-  fit-test-clip.stl
-      Skip this one. It's only for checking the clip on Ryan's monitor, and Ryan is
-      measuring the monitor himself instead.
-
   fixed_vertical-seam.stl    +  fit_vertical-seam_0.10mm / 0.15mm / 0.20mm
   fixed_horizontal-seam.stl  +  fit_horizontal-seam_0.10mm / 0.15mm / 0.20mm
       The "fixed" piece is the same for all three tests. Try each "fit" piece in it.
@@ -43,7 +39,6 @@ SHIPPING TO RYAN
   Don't assemble anything. Ship the pieces separate, packed flat.
   Wrap each piece on its own (bubble wrap or foam): the thin back edge along each
   seam breaks easily.
-  Ryan has to send you his monitor measurement before you print step 2.
 
 
 ALSO NEEDED

@@ -8,7 +8,6 @@ P="$D/print-files"
 rm -rf "$D/stl" "$P"
 T="$P/step-1_test-prints"
 mkdir -p "$T"
-cp "$S/out/sets/2-notch_0.15mm/0_fit-test-clip_print-first.stl" "$T/fit-test-clip.stl"
 cp "$S"/out/coupons/*.stl "$T/"
 for s in "$S"/out/sets/*; do
   n=$(basename "$s")                 # e.g. 1-notch_0.10mm
