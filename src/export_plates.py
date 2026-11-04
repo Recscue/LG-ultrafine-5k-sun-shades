@@ -18,21 +18,23 @@ PITCH = 400.0      # plates sit side by side along X in the viewer
 PLATES = {
     "A": ["left_2_outer", "right_2_outer",
           "left_3_middle_monitor-camera-notch", "right_3_middle_monitor-camera-notch"],
-    "B": ["left_4_inner_webcam-shelf_spine", "right_4_inner_spine",
-          "left_1a_side-extension-top", "right_1a_side-extension-top",
-          ["left_1b_side-extension-bottom", "right_1b_side-extension-bottom"]],
-    "T": [["fixed_vertical-seam", "fit_vertical-seam_0.10mm_1-notch"],
-          ["fit_vertical-seam_0.15mm_2-notch", "fit_vertical-seam_0.20mm_3-notch"],
-          ["fixed_horizontal-seam", "fit_horizontal-seam_0.10mm_1-notch",
-           "fit_horizontal-seam_0.15mm_2-notch", "fit_horizontal-seam_0.20mm_3-notch"]],
+    "B": ["left_4_inner_spine", "right_4_inner_spine", "left_5_webcam-shelf"],
+    # 330 mm long: only fits diagonally, standing on its flat outer edge
+    "C": [("left_1_side-extension", 45)],
+    "D": [("right_1_side-extension", 45)],
+    "T": [["fixed_seam", "fit_seam_0.10mm_1-notch"],
+          ["fit_seam_0.15mm_2-notch", "fit_seam_0.20mm_3-notch"]],
 }
 PART_RGB = [(92, 102, 116), (112, 122, 136)]
 BED_RGB = (46, 50, 56)
 
 
 def load(name):
+    name, ang = name if isinstance(name, tuple) else (name, 0)
     d = COUP if name.startswith(("fit_", "fixed_")) else SET
     m = trimesh.load(os.path.join(d, name + ".stl"))
+    if ang:
+        m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(ang), [0, 0, 1]))
     m.apply_translation(-m.bounds[0])          # sit on the bed at the origin corner
     return m
 
@@ -52,7 +54,7 @@ def layout(rows):
         names = row if isinstance(row, list) else [row]
         ms = [load(n) for n in names]
         x, depth = 0.0, 0.0
-        for n, m in zip(names, ms):
+        for n, m in zip([x[0] if isinstance(x, tuple) else x for x in names], ms):
             m.apply_translation([x, y, 0])
             placed.append((n, m))
             x += m.extents[0] + GAP

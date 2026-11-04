@@ -1,18 +1,17 @@
 SUN SHIELD - PRINT FILES
 
 Filament: PETG (dry it first). Print everything in the same filament and settings.
+Print every file exactly as it opens. Don't use Auto Orient and don't lay parts flat.
 
 
-STEP 1: TEST PRINTS (all on one plate)
+STEP 1: TEST PRINTS (one plate)
 Folder: step-1_test-prints
 
-  fixed_vertical-seam.stl    +  fit_vertical-seam_0.10mm / 0.15mm / 0.20mm
-  fixed_horizontal-seam.stl  +  fit_horizontal-seam_0.10mm / 0.15mm / 0.20mm
+  fixed_seam.stl  +  fit_seam_0.10mm / 0.15mm / 0.20mm
       The "fixed" piece is the same for all three tests. Try each "fit" piece in it.
       The notches on the edge also mark the size: 1 = 0.10, 2 = 0.15, 3 = 0.20.
 
   Pick the TIGHTEST one that slides together by hand with no visible gap at the front.
-  Use the vertical seam result if the two disagree.
 
 
 STEP 2: THE SHIELD
@@ -20,26 +19,24 @@ Folder: step-2_full-shield
 
   Open ONLY the folder matching the size you picked in step 1:
       0.10mm_1-notch    0.15mm_2-notch    0.20mm_3-notch
-
-  Each has a left-monitor and a right-monitor folder with 5 parts each.
   Don't mix parts from different size folders.
 
   Parts, numbered from the outside edge toward the middle:
-      1a  side extension, top
-      1b  side extension, bottom
+      1   side extension (one piece)
       2   outer piece
       3   middle piece (notch for the monitor's built-in camera)
-      4   inner piece (left has the webcam shelf; both have the hinge knuckles)
+      4   inner piece (has the hinge knuckles)
+      5   webcam shelf (left folder only, separate part)
 
-  Print every part standing up, exactly as the file opens. Don't use Auto Orient
-  and don't lay parts flat. Standing up, several parts fit on one plate:
-      Plate A: both 2_outer and both 3_middle pieces (4 parts)
-      Plate B: both 4_inner pieces, both 1a and both 1b pieces (6 parts)
-  Use a brim so the tall parts don't tip.
-  Supports: only under the rounded corner of each 1a and 1b piece.
-
-  Print the step 1 test pieces standing up too, all 8 on one plate, so the test
-  matches the real parts.
+  Plates:
+      Plate A: both 2 and both 3 pieces, standing on their seam end (4 parts)
+      Plate B: both 4 pieces standing on their seam end, plus the webcam shelf
+               flat on its bottom (3 parts)
+      Plate C: the left 1 piece, diagonally across the bed, on its flat outer edge
+      Plate D: the right 1 piece, same way
+  Brim: 10 mm on plates A and B (those parts stand on the tips of their joints).
+        No brim on C and D (the diagonal fills the bed, and the flat edge holds it).
+  Supports: only under the rounded corners of the 1 pieces, where they meet the bed.
 
 
 SHIPPING TO RYAN
@@ -50,6 +47,6 @@ SHIPPING TO RYAN
 
 ALSO NEEDED
   About 200 mm of 1.75 mm filament, as the hinge pin between the two inner pieces.
-  One 1/4"-20 screw, 1/4" to 3/8" long, head no wider than 14 mm, for the webcam.
+  One 1/4"-20 screw, 3/8" long, head no wider than 14 mm, for the webcam.
 
 More detail: PRINTING.md in the main folder.

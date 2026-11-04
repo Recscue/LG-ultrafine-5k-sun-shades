@@ -411,7 +411,7 @@ def panel(parity):
     p = p + relief(lat)
     p = p ^ xz_extrude(sil)
     if parity == 0:
-        p = p + camera_shelf()
+        p = p + shelf_rail()
     # camera notch in the front lip, centred on the monitor
     cx = MONITOR_W / 2
     p = p - box(cx - CAM_NOTCH_W / 2, cx + CAM_NOTCH_W / 2, Y_OUT_F - 1, Y_IN_F + 0.01, -FRONT_LIP - 1, 0.01)
@@ -560,7 +560,47 @@ def tilt_about_pivot(m, z0):
 
 
 SHELF_FRONT_AHEAD = 23.0   # front edge, measured along the aim from the camera centre
-SCREW_SEAT = 4.0           # plastic left under the camera at the screw, above the head pocket
+SCREW_SEAT = 1.0           # cone tip to top face; plastic over the screw head is ~4.5 mm
+
+
+# The shelf is its own printed part. It slides onto a dovetail rail on the front face of
+# the left inner piece's clip, from the outer (-X) side, until its closed end stops on the
+# rail. Load path for the camera's weight: the shelf's back rests on the 45 deg fillet and
+# the rail's upper flank (it can't drop), and the tipping moment from the camera sitting in
+# front is taken by the dovetail flanks as a couple along the whole rail (it can't pitch
+# forward or lift at the back).
+RAIL_X0, RAIL_X1 = 540.0, 616.0    # inner piece only, behind the shelf's back edge
+RAIL_D = 2.5                       # how far the rail stands proud of the clip's front face
+
+
+def rail_profile(grow=0.0):
+    """Dovetail rail in (Y, Z) on the clip's front face (Y = Y_OUT_F): 3 mm at the root,
+    8 mm at the tip, 45 deg flanks, so it prints unsupported upside down and the shelf's
+    slot prints unsupported upright."""
+    y0, y1 = Y_OUT_F + 0.02, Y_OUT_F - RAIL_D
+    cs = ccw([(y0, -3.5), (y0, -0.5), (y1, 2.0), (y1, -FRONT_LIP)])
+    return cs.offset(grow, JoinType.Miter) if grow else cs
+
+
+def shelf_rail():
+    return yz_extrude(rail_profile(), RAIL_X0, RAIL_X1)
+
+
+def webcam_shelf():
+    """The separate shelf part: the old fused wedge, trimmed to sit in front of the clip and
+    on top of its fillet with JOINT_CLEAR everywhere, with the rail slot cut along X. The
+    slot is closed at its -X end (the end stop) and open at +X."""
+    c = JOINT_CLEAR
+    S = camera_shelf()
+    front = box(-5000, 5000, -5000, Y_OUT_F - c, -5000, 5000)
+    top = yz_extrude(ccw([(Y_OUT_F - 1, WALL + 1.5 * c - 1),
+                          (FIN_F - c, WALL + 1.5 * c + (FIN_F - c - Y_OUT_F)),
+                          (FIN_F - c, 500), (Y_OUT_F - 1, 500)]), -5000, 5000)
+    shelf = S ^ (front + top)
+    shelf = shelf - yz_extrude(rail_profile(c), RAIL_X0 - c, 5000)
+    knuckles = CrossSection.circle(KNUCKLE_R + KNUCKLE_CLEAR + 0.3, SEG).translate(
+        [AXIS_X, FIN_MID]).extrude(400).translate([0, 0, -100])
+    return shelf - knuckles
 
 
 def camera_shelf():
@@ -612,8 +652,15 @@ def camera_shelf():
     solid = (solid - under) + (solid ^ slab)
     hole = CrossSection.circle(HOLE_D / 2, 48).translate([cx, cy])
     hole_cyl = tilt_about_pivot(hole.extrude(80).translate([0, 0, ztop - 60]), z0)
-    head = CrossSection.circle(SCREW_HEAD_R, 64).translate([cx, cy])
-    pocket = tilt_about_pivot(head.extrude(80).translate([0, 0, ztop - SCREW_SEAT - 80]), z0)
+    # Screw-head pocket from below, with a 45 deg conical roof instead of a flat one so
+    # the shelf prints upright with no support inside the pocket. The head bears on the
+    # cone about 4.5 mm below the top face.
+    hc = SCREW_HEAD_R - HOLE_D / 2
+    zc = ztop - SCREW_SEAT - hc
+    roof = Manifold.cylinder(hc + 0.01, SCREW_HEAD_R, HOLE_D / 2, 64).translate([cx, cy, zc - 0.01])
+    pocket = tilt_about_pivot(
+        CrossSection.circle(SCREW_HEAD_R, 64).translate([cx, cy]).extrude(80).translate([0, 0, zc - 80])
+        + roof, z0)
     return solid - hole_cyl - pocket
 
 
@@ -637,12 +684,11 @@ def pieces(parity):
     bounds = [(None, s[0]), (s[0], s[1]), (s[1], s[2]), (s[2], None)]
     names = ["extension", "outer", "middle-camera", "inner"]
     out = {n: p ^ region(a, b) for n, (a, b) in zip(names, bounds)}
-    # The extension is 330 mm tall, longer than the P2S bed, so it splits again on a
-    # horizontal dovetail seam below the monitor's top edge: "extension" keeps the top,
-    # "extension-lower" the bottom.
-    ext = out["extension"]
-    out["extension"] = ext ^ hregion(upper=True)
-    out["extension-lower"] = ext ^ hregion(upper=False)
+    # The side extension stays one piece (330 mm tall). It prints lying on its flat outer
+    # edge, diagonally across the bed, so it needs no horizontal seam: a seam there would put
+    # dovetail tails sideways on the bed, and a sideways tail always starts in mid-air.
+    if parity == 0:
+        out["webcam-shelf"] = webcam_shelf()
     return out
 
 
@@ -693,14 +739,17 @@ def main():
     left = pieces(parity=0)
     right = {n: mirror_right(m) for n, m in pieces(parity=1).items()}
     # orientation: extension's free outer edge down; inner piece's knuckles up
-    flips = {"left": {"extension": False, "extension-lower": False, "outer": False,
-                      "middle-camera": False, "inner": False},
-             "right": {"extension": True, "extension-lower": True, "outer": True,
-                       "middle-camera": True, "inner": True}}
+    flips = {"left": {"extension": False, "outer": False, "middle-camera": False, "inner": False},
+             "right": {"extension": True, "outer": True, "middle-camera": True, "inner": True}}
     for side, parts in (("left", left), ("right", right)):
         for n, m in parts.items():
             name = f"{side}_{n}.stl"
-            report.append((name, *export(to_print(m, flips[side][n]), name)))
+            if n == "webcam-shelf":      # prints the right way up, on its flat bottom
+                b = m.bounding_box()
+                mm = m.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+            else:
+                mm = to_print(m, flips[side][n])
+            report.append((name, *export(mm, name)))
     report.append(("fit_test_clip.stl", *export(to_print(fit_test(), False), "fit_test_clip.stl")))
     for name, s, note in report:
         print(f"{name:28s} {s[0]:7.1f} x {s[1]:7.1f} x {s[2]:7.1f} mm  {note}")

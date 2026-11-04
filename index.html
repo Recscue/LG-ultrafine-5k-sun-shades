@@ -26,6 +26,8 @@
   <button data-view="exploded">Exploded</button>
   <button data-view="plateA">Plate A</button>
   <button data-view="plateB">Plate B</button>
+  <button data-view="plateC">Plate C</button>
+  <button data-view="plateD">Plate D</button>
   <button data-view="plateT">Test plate</button>
   <button id="monitors" class="on">Monitors</button>
 </div>
@@ -69,11 +71,15 @@ views.exploded = [T(0, -3300, 1100), T(0, 60, 40)];
 const plateView = (i, z) => [T(i * 400 + 128 - 170, -260, z + 230), T(i * 400 + 128, 128, z * 0.35)];
 views.plateA = plateView(0, 235);
 views.plateB = plateView(1, 220);
-views.plateT = [T(2 * 400 + 128 - 70, -40, 170), T(2 * 400 + 128, 128, 10)];
+views.plateC = plateView(2, 205);
+views.plateD = plateView(3, 205);
+views.plateT = [T(4 * 400 + 128 - 70, -40, 150), T(4 * 400 + 128, 128, 10)];
 const plateNotes = {
   plateA: 'Plate A: both outer and both middle pieces, standing as the files open. 256 x 256 mm bed.',
-  plateB: 'Plate B: both inner pieces and both halves of each side extension. 256 x 256 mm bed.',
-  plateT: 'Test plate: the 8 joint test pieces, standing like the real parts. 256 x 256 mm bed.',
+  plateB: 'Plate B: both inner pieces standing on their seam end, and the webcam shelf flat on its bottom. 256 x 256 mm bed.',
+  plateC: 'Plate C: left side extension, one piece, diagonal, standing on its flat outer edge. 256 x 256 mm bed.',
+  plateD: 'Plate D: right side extension, one piece, diagonal, standing on its flat outer edge. 256 x 256 mm bed.',
+  plateT: 'Test plate: the fixed seam piece and the three fit pieces, standing like the real parts. 256 x 256 mm bed.',
 };
 let monitorsOn = true, assemblyRoot = null, platesRoot = null;
 const noteEl = document.getElementById('note'), noteDefault = noteEl.textContent;
@@ -121,14 +127,14 @@ new GLTFLoader().load('assembly.glb?v=' + Date.now(), gltf => {
     });
     const m = o.name.match(/^shield_(left|right)_(.+)$/);
     if (m) {
-      const lower = m[2] === 'extension-lower';
-      const k = order.indexOf(lower ? 'extension' : m[2]);
+      const shelf = m[2] === 'webcam-shelf';
+      const k = order.indexOf(shelf ? 'inner' : m[2]);
       // each piece slides away from the spine along its own panel: GAP between pieces,
       // SPLIT between the two monitors' halves; alternate pieces lift so the joints read
       const GAP = 110, SPLIT = 90, d = (3 - k) * GAP + SPLIT;
       const off = (m[1] === 'left' ? dirL.clone().multiplyScalar(-d) : dirR.clone().multiplyScalar(d));
       off.y += (k % 2) * 40;
-      if (lower) off.y -= 110;   // bottom half of the side extension drops away from its top
+      if (shelf) off.add(T(0, -90, 30));   // the shelf slides forward off its rail
       shield.push({ o, base: o.position.clone(), off });
     } else monitors.push(o);
   });

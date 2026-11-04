@@ -22,11 +22,11 @@ import sys, trimesh
 d = sys.argv[1]
 names = {
  "fit_test_clip": "0_fit-test-clip_print-first",
- "left_extension": "left_1a_side-extension-top", "left_extension-lower": "left_1b_side-extension-bottom",
+ "left_extension": "left_1_side-extension", "left_webcam-shelf": "left_5_webcam-shelf",
  "left_outer": "left_2_outer",
  "left_middle-camera": "left_3_middle_monitor-camera-notch",
- "left_inner": "left_4_inner_webcam-shelf_spine",
- "right_extension": "right_1a_side-extension-top", "right_extension-lower": "right_1b_side-extension-bottom",
+ "left_inner": "left_4_inner_spine",
+ "right_extension": "right_1_side-extension",
  "right_outer": "right_2_outer",
  "right_middle-camera": "right_3_middle_monitor-camera-notch",
  "right_inner": "right_4_inner_spine",
