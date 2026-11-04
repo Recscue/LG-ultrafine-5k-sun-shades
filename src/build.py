@@ -649,9 +649,17 @@ def fit_test():
 # --------------------------------------------------------------------------------------
 # Export in print orientation: the piece's X axis points up.
 # --------------------------------------------------------------------------------------
+PRINT_FLAT = os.environ.get("PRINT_FLAT", "0") == "1"   # standing batches 4-5 parts per plate
+
+
 def to_print(m, flip):
-    """flip=False puts the piece's min-X end on the bed, flip=True its max-X end."""
-    m = m.rotate([0, -90, 0]) if not flip else m.rotate([0, 90, 0])
+    """Default: lying flat, faceted front face up, back (sun side) down, so a slicer
+    needs no rotation and support marks land on the hidden back. PRINT_FLAT=0 gives the
+    old standing export: flip=False puts the min-X end on the bed, flip=True the max-X end."""
+    if PRINT_FLAT:
+        m = m.rotate([-90, 0, 0])            # use-frame -Y (front, facets) -> +Z (up)
+    else:
+        m = m.rotate([0, -90, 0]) if not flip else m.rotate([0, 90, 0])
     b = m.bounding_box()
     return m.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
 

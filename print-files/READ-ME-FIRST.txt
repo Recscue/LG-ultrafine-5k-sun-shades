@@ -31,8 +31,15 @@ Folder: step-2_full-shield
       3   middle piece (notch for the monitor's built-in camera)
       4   inner piece (left has the webcam shelf; both have the hinge knuckles)
 
-  Lay parts flat, faceted side UP, so support marks end up on the back.
-  Keep supports off the dovetail edges, or sand them lightly if they get marks.
+  Print every part standing up, exactly as the file opens. Don't use Auto Orient
+  and don't lay parts flat. Standing up, several parts fit on one plate:
+      Plate A: both 2_outer and both 3_middle pieces (4 parts)
+      Plate B: both 4_inner pieces, both 1a and both 1b pieces (6 parts)
+  Use a brim so the tall parts don't tip.
+  Supports: only under the rounded corner of each 1a and 1b piece.
+
+  Print the step 1 test pieces standing up too, all 8 on one plate, so the test
+  matches the real parts.
 
 
 SHIPPING TO RYAN
