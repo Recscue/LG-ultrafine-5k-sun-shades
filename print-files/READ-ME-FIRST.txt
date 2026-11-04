@@ -39,6 +39,13 @@ Folder: step-2_full-shield
   Keep supports off the dovetail edges, or sand them lightly if they get marks.
 
 
+SHIPPING TO RYAN
+  Don't assemble anything. Ship the pieces separate, packed flat.
+  Wrap each piece on its own (bubble wrap or foam): the thin back edge along each
+  seam breaks easily.
+  Ryan has to send you his monitor measurement before you print step 2.
+
+
 ALSO NEEDED
   About 200 mm of 1.75 mm filament, as the hinge pin between the two inner pieces.
   One 1/4"-20 screw, 1/4" to 3/8" long, head no wider than 14 mm, for the webcam.
