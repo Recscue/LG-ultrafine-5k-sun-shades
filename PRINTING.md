@@ -26,11 +26,15 @@ Print `stl/test-coupons/` before the full set, in the same filament and process 
 
 | Notches | Clearance per side |
 |---|---|
-| 1 | 0.10 mm |
-| 2 | 0.15 mm (the default the full set is built with) |
-| 3 | 0.20 mm |
+| Notches | Clearance per side | Full set to print |
+|---|---|---|
+| 1 | 0.10 mm | `stl/1-notch_0.10mm/` |
+| 2 | 0.15 mm | `stl/2-notch_0.15mm/` |
+| 3 | 0.20 mm | `stl/3-notch_0.20mm/` |
 
-Each clearance has a horizontal-seam pair (`horiz-top`, `horiz-bottom`) and a vertical-seam pair (`vert-left`, `vert-right`). Press each pair together the way the real pieces go together, sliding the panel face on from the back. Pick the tightest clearance that goes together by hand without a mallet and has no visible gap at the front face. If that isn't 2 notches, rebuild the set with `FIT=0.10` or `FIT=0.20` in front of `python src/build.py`.
+Each clearance has a horizontal-seam pair (`horiz-top`, `horiz-bottom`) and a vertical-seam pair (`vert-left`, `vert-right`). Press each pair together the way the real pieces go together, sliding the panel face on from the back. Pick the tightest clearance that goes together by hand without a mallet and has no visible gap at the front face, then print the whole set from the matching folder. Each folder has all 11 files, so never mix folders. If even the 3-notch pair is tight, or the 1-notch pair is loose, calibrate as below and re-print the coupons rather than forcing a set.
+
+`src/build_sets.sh` rebuilds all three sets and runs the seam and assembly checks on each.
 
 Printing notes for the fit:
 - **Elephant foot compensation:** keep it on in Bambu Studio. Several pieces have a seam starting on the bed, and first-layer squish otherwise flares those tails.

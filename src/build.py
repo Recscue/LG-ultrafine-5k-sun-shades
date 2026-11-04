@@ -69,7 +69,8 @@ SEED = 7
 
 MAX_BED = 256.0
 SEG = 64
-OUT = os.path.join(os.path.dirname(__file__), "out_mjf" if os.environ.get("MJF") == "1" else "out")
+OUT = os.environ.get("OUT_DIR") or os.path.join(
+    os.path.dirname(__file__), "out_mjf" if os.environ.get("MJF") == "1" else "out")
 
 # Derived
 Y_IN_F, Y_IN_B = -CLEAR, EDGE_T + CLEAR

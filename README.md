@@ -9,7 +9,8 @@ It clips onto each monitor's top edge, rises 8 in, reaches 7 in past each outer 
 
 ## Files
 
-- `stl/`: the 11 print files plus `stl/test-coupons/`, numbered from each monitor's outer edge toward the middle. Print `0_fit-test-clip_print-first.stl` first.
+- `stl/test-coupons/`: print these first. They test the dovetail fit at three clearances, marked by 1, 2 or 3 notches.
+- `stl/1-notch_0.10mm/`, `stl/2-notch_0.15mm/`, `stl/3-notch_0.20mm/`: a complete set of 11 print files at each clearance. Print only the folder matching the coupon pair that fit best. Files are numbered from each monitor's outer edge toward the middle, and `0_fit-test-clip_print-first.stl` goes first.
 - `PRINTING.md`: print settings, assembly steps and the measurements to check before printing.
 - `renders/`: still views of the spine, seams, corner and webcam shelf.
 - `src/`: the parametric model. `python src/build.py` regenerates the STLs (needs `manifold3d`, `trimesh`, `numpy`, `scipy`).
