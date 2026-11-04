@@ -24,6 +24,9 @@
   <button data-view="seam">Seam close-up</button>
   <button data-view="seamBack">Seam from behind</button>
   <button data-view="exploded">Exploded</button>
+  <button data-view="plateA">Plate A</button>
+  <button data-view="plateB">Plate B</button>
+  <button data-view="plateT">Test plate</button>
   <button id="monitors" class="on">Monitors</button>
 </div>
 <div id="note">Drag to orbit, scroll to zoom, right-drag to pan. Units are mm.</div>
@@ -62,13 +65,41 @@ const views = {
   sideBack: [T(-1500, 900, 150), T(-560, 100, -120)],
 };
 views.exploded = [T(0, -3300, 1100), T(0, 60, 40)];
-let monitorsOn = true;
+// print plates (plates.glb): plate i spans x = i*400 .. i*400+256 on a 256 mm bed
+const plateView = (i, z) => [T(i * 400 + 128 - 170, -260, z + 230), T(i * 400 + 128, 128, z * 0.35)];
+views.plateA = plateView(0, 235);
+views.plateB = plateView(1, 220);
+views.plateT = [T(2 * 400 + 128 - 70, -40, 170), T(2 * 400 + 128, 128, 10)];
+const plateNotes = {
+  plateA: 'Plate A: both outer and both middle pieces, standing as the files open. 256 x 256 mm bed.',
+  plateB: 'Plate B: both inner pieces and both halves of each side extension. 256 x 256 mm bed.',
+  plateT: 'Test plate: the 8 joint test pieces, standing like the real parts. 256 x 256 mm bed.',
+};
+let monitorsOn = true, assemblyRoot = null, platesRoot = null;
+const noteEl = document.getElementById('note'), noteDefault = noteEl.textContent;
 function go(v) {
   const [eye, tgt] = views[v];
   camera.position.copy(eye); controls.target.copy(tgt); controls.update();
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  const plate = v in plateNotes;
+  if (assemblyRoot) assemblyRoot.visible = !plate;
+  if (platesRoot) platesRoot.visible = plate;
+  noteEl.textContent = plate ? plateNotes[v] : noteDefault;
   setExploded(v === 'exploded');
 }
+new GLTFLoader().load('plates.glb?v=' + Date.now(), gltf => {
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    o.material = new THREE.MeshStandardMaterial({
+      color: 0xffffff, vertexColors: !!o.geometry.attributes.color,
+      flatShading: true, roughness: o.name.startsWith('bed_') ? 0.9 : 0.75, metalness: 0.05,
+    });
+  });
+  platesRoot = gltf.scene;
+  const cur = document.querySelector('[data-view].on');
+  platesRoot.visible = !!cur && cur.dataset.view in plateNotes;
+  scene.add(platesRoot);
+});
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
 
 const toe = 14 * Math.PI / 180;   // measured 152 deg between the monitors
@@ -101,6 +132,7 @@ new GLTFLoader().load('assembly.glb?v=' + Date.now(), gltf => {
       shield.push({ o, base: o.position.clone(), off });
     } else monitors.push(o);
   });
+  assemblyRoot = gltf.scene;
   scene.add(gltf.scene);
   const q = new URLSearchParams(location.search);
   go(q.get('view') || 'front');
