@@ -38,8 +38,6 @@ upper = parts["extension"] ^ block
 for i in range(n):  # clearance marker notches, 2 mm wide, on the outer side edge
     zc = z_lo + 4 + i * 4
     lower = lower - B.box(cx - w - 1, cx - w + 1.5, -100, 100, zc - 1, zc + 1)
-    zc = z_hi - 4 - i * 4
-    upper = upper - B.box(cx - w - 1, cx - w + 1.5, -100, 100, zc - 1, zc + 1)
 
 # one tail of a vertical seam (outer | middle), the joint type used six times in the set
 xa = B.SEAMS[1]
@@ -49,7 +47,6 @@ right_v = parts["middle-camera"] ^ vb
 for i in range(n):
     xc = xa - 8 + 0 * i
     zc = 56 + i * 4
-    left_v = left_v - B.box(xa - 13, xa - 10.5, -100, 100, zc - 1, zc + 1)
     right_v = right_v - B.box(xa + B.ROW_H + B.LAP + 10.5, xa + B.ROW_H + B.LAP + 13, -100, 100, zc - 1, zc + 1)
 
 out = os.path.join(HERE, "out", "coupons")
@@ -62,7 +59,15 @@ for name, m in (("horiz-bottom", lower), ("horiz-top", upper),
     m = B.to_print(m, False)
     tm = B.to_trimesh(m)
     assert tm.is_watertight
-    path = os.path.join(out, f"coupon_{tag}_{name}.stl")
+    # horiz-top and vert-left take no clearance, so they're identical at every fit:
+    # export them once, without notches, as the fixed pieces the tails are tested in
+    if name in ("horiz-top", "vert-left"):
+        if tag != "2-notch":
+            continue
+        path = os.path.join(out, f"fixed_{'horizontal' if name == 'horiz-top' else 'vertical'}-seam.stl")
+    else:
+        kind = "horizontal" if name == "horiz-bottom" else "vertical"
+        path = os.path.join(out, f"fit_{kind}-seam_{B.JOINT_CLEAR:.2f}mm_{tag}.stl")
     tm.export(path)
     s = tm.bounds[1] - tm.bounds[0]
     print(f"{os.path.basename(path):30s} {s[0]:5.1f} x {s[1]:5.1f} x {s[2]:5.1f} mm  fit {B.JOINT_CLEAR} mm/side")

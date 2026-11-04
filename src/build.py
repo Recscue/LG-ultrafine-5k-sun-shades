@@ -236,12 +236,17 @@ def back_polyline(front):
 
 
 def _poly_region(left, right, clear):
-    L = left if left is not None else [(-2000.0, -2000.0), (-2000.0, 2000.0)]
-    R = right if right is not None else [(4000.0, -2000.0), (4000.0, 2000.0)]
-    pts = L + R[::-1]
-    signed = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1])) / 2
-    cs = CrossSection([pts if signed > 0 else pts[::-1]])
-    return xz_extrude(cs.offset(-clear, JoinType.Miter))
+    """Region between two seam polylines (each runs bottom to top). The whole clearance
+    comes off the piece on the +X side of each seam, so the gap at every dovetail face
+    equals `clear` and the -X piece stays at nominal size. Shrinking both pieces, as this
+    did before 2026-11-03, doubled every gap."""
+    m = box(-5000, 5000, -300, 300, -5000, 5000)
+    if left is not None:
+        m = m ^ xz_extrude(ccw(left + [(5000.0, 2000.0), (5000.0, -2000.0)])
+                           .offset(-clear, JoinType.Miter))
+    if right is not None:
+        m = m ^ xz_extrude(ccw(right + [(-5000.0, 2000.0), (-5000.0, -2000.0)]))
+    return m
 
 
 def region(left, right):
@@ -296,8 +301,11 @@ def hregion(upper):
     else:
         F = ccw(line + [(3000.0, -3000.0), (-3000.0, -3000.0)])
         Bk = rect(-3000, 3000, -3000, zb)
-    return _compose(xz_extrude(F.offset(-JOINT_CLEAR, JoinType.Miter)),
-                    xz_extrude(Bk.offset(-JOINT_CLEAR, JoinType.Miter)))
+    # The lower piece carries the tails and takes the whole clearance; the upper piece,
+    # with the sockets, stays at nominal size.
+    c = 0.0 if upper else JOINT_CLEAR
+    return _compose(xz_extrude(F.offset(-c, JoinType.Miter)),
+                    xz_extrude(Bk.offset(-c, JoinType.Miter)))
 
 
 # --------------------------------------------------------------------------------------

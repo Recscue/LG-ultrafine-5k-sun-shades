@@ -2,56 +2,40 @@
 
 Each monitor gets one continuous faceted panel. It rises 8 in above the top edge, continues 7 in past the monitor's outer side and reaches 5 in below the top edge there. It's split into printable pieces only along edges of its own triangle facets, and every split is a dovetail, so the seams read as more facet lines and the pieces lock together like a puzzle. Each seam is also a shiplap. The faceted front layer is cut on the dovetail, and the plain 1.2 mm back layer is cut straight, past the end of the dovetail band, so a back layer always covers the gap in the front layer behind it. `check_seams.py` casts about 775,000 rays through the seam bands and found no line of sight through any of them. The two panels meet at a knuckle spine pinned with a length of filament, which follows whatever angle the monitors sit at.
 
-## File names
-
-The print files were renamed so each name says what the part is. The geometry is unchanged (byte-identical copies). Numbers run from the monitor's outer edge toward the middle where the two monitors meet.
-
-| New name | Old name | What it is |
-|---|---|---|
-| `0_fit-test-clip_print-first.stl` | `p2s_fit_test_clip.stl` | 20 mm slice of the clip, to check the fit first |
-| `left_1a_side-extension-top.stl` | `p2s_left_extension.stl` (top half) | Left monitor, part past its outer side, above the horizontal seam |
-| `left_1b_side-extension-bottom.stl` | `p2s_left_extension.stl` (bottom half) | Left monitor, part past its outer side, below the horizontal seam |
-| `left_2_outer.stl` | `p2s_left_outer.stl` | Left monitor, outer third |
-| `left_3_middle_monitor-camera-notch.stl` | `p2s_left_middle-camera.stl` | Left monitor, middle third, notch over the LG's built-in camera |
-| `left_4_inner_webcam-shelf_spine.stl` | `p2s_left_inner.stl` | Left monitor, inner third, Logitech webcam shelf and knuckles |
-| `right_1a_side-extension-top.stl` | `p2s_right_extension.stl` (top half) | Right monitor, part past its outer side, above the horizontal seam |
-| `right_1b_side-extension-bottom.stl` | `p2s_right_extension.stl` (bottom half) | Right monitor, part past its outer side, below the horizontal seam |
-| `right_2_outer.stl` | `p2s_right_outer.stl` | Right monitor, outer third |
-| `right_3_middle_monitor-camera-notch.stl` | `p2s_right_middle-camera.stl` | Right monitor, middle third, notch over the LG's built-in camera |
-| `right_4_inner_spine.stl` | `p2s_right_inner.stl` | Right monitor, inner third, knuckles |
-
 ## Test the joints first
 
-Print `stl/test-coupons/` before the full set, in the same filament and process profile you'll use for the real parts. That's 12 small pieces, about 100 g of PETG. They're slices of the real seams, cut straight from the full model, at three clearances. The number of notches on each piece's edge marks its clearance:
+Print everything in `print-files/step-1_test-prints/` on one plate before the shield, in the same filament and profile you'll use for the real parts. That's 9 small pieces: the fit-test clip, two fixed pieces and six fit pieces.
 
-| Notches | Clearance per side |
-|---|---|
-| Notches | Clearance per side | Full set to print |
+At every seam, one piece is exactly nominal and the other carries the whole clearance. So each seam type gets one `fixed_` piece and three `fit_` pieces to try in it, and the clearance in the file name is the real gap at each dovetail face. The notches on each fit piece's edge also mark it:
+
+| Fit piece | Gap at each face | Full shield to print |
 |---|---|---|
-| 1 | 0.10 mm | `stl/1-notch_0.10mm/` |
-| 2 | 0.15 mm | `stl/2-notch_0.15mm/` |
-| 3 | 0.20 mm | `stl/3-notch_0.20mm/` |
+| 1 notch | 0.10 mm | `print-files/step-2_full-shield/0.10mm_1-notch/` |
+| 2 notches | 0.15 mm | `print-files/step-2_full-shield/0.15mm_2-notch/` |
+| 3 notches | 0.20 mm | `print-files/step-2_full-shield/0.20mm_3-notch/` |
 
-Each clearance has a horizontal-seam pair (`horiz-top`, `horiz-bottom`) and a vertical-seam pair (`vert-left`, `vert-right`). Press each pair together the way the real pieces go together, sliding the panel face on from the back. Pick the tightest clearance that goes together by hand without a mallet and has no visible gap at the front face, then print the whole set from the matching folder. Each folder has all 11 files, so never mix folders. If even the 3-notch pair is tight, or the 1-notch pair is loose, calibrate as below and re-print the coupons rather than forcing a set.
+Press each fit piece into its fixed piece the way the real pieces go together. Pick the tightest that goes together by hand without a mallet and has no visible gap at the front face, then print the whole shield from the matching folder. If the vertical and horizontal results disagree, go with the vertical one, since there are six vertical seams and two horizontal. Never mix folders. If even 0.20 mm is tight, or 0.10 mm is loose, calibrate as below and re-print the test pieces rather than forcing a set.
 
 `src/build_sets.sh` rebuilds all three sets and runs the seam and assembly checks on each.
 
 Printing notes for the fit:
 - **Elephant foot compensation:** keep it on in Bambu Studio. Several pieces have a seam starting on the bed, and first-layer squish otherwise flares those tails.
-- **XY contour compensation:** if the coupons all come out tight or all loose, Bambu's [XY Hole / Contour compensation guide](https://wiki.bambulab.com/en/software/bambu-studio/xy-hole-contour-compensation) shows how to calibrate it per filament. Calibrate first, then re-print the coupons.
+- **XY contour compensation:** if the test pieces all come out tight or all loose, Bambu's [XY Hole / Contour compensation guide](https://wiki.bambulab.com/en/software/bambu-studio/xy-hole-contour-compensation) shows how to calibrate it per filament. Calibrate first, then re-print the test pieces.
 - **Dry filament:** wet PETG extrudes unevenly and changes the fit.
 
 ## Parts
 
-| File | Print | Notes |
-|---|---|---|
-| `out/fit_test_clip.stl` | 1, first | 20 mm slice of the clip. Push it onto the monitor's top edge before printing anything else |
-| `out/left_extension.stl`, `out/right_extension.stl` | 1 each | The part past the monitor's side. 330 mm long, so place it diagonally on the bed (it fits with about 7 mm to spare) |
-| `out/left_outer.stl`, `out/right_outer.stl` | 1 each | |
-| `out/left_middle-camera.stl`, `out/right_middle-camera.stl` | 1 each | Notch in the front lip over the camera |
-| `out/left_inner.stl`, `out/right_inner.stl` | 1 each | Carry the knuckles. Left and right knuckles alternate |
+Each folder in `print-files/step-2_full-shield/` holds a `left-monitor/` and a `right-monitor/` folder with these five parts, numbered from the monitor's outer edge toward the middle:
 
-Every STL is already in print orientation, with no supports needed. The dovetail tails print with 60° sides, and the ceiling over each socket is a short bridge.
+| Part | What it is |
+|---|---|
+| `1a_side-extension-top` | Past the monitor's outer side, above the horizontal seam |
+| `1b_side-extension-bottom` | Past the monitor's outer side, below the horizontal seam |
+| `2_outer` | Outer third |
+| `3_middle_monitor-camera-notch` | Middle third, notch over the LG's built-in camera |
+| `4_inner` | Inner third with the hinge knuckles. The left one also carries the webcam shelf |
+
+The files are exported standing up. Printing them flat, faceted side up, is also fine and stronger: support marks then land on the back, which faces the sun. Keep supports off the dovetail faces.
 
 ## Webcam shelf
 
