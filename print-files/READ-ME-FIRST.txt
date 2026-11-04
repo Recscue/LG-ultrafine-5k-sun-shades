@@ -7,8 +7,8 @@ STEP 1: TEST PRINTS (all on one plate)
 Folder: step-1_test-prints
 
   fit-test-clip.stl
-      Push it onto a monitor's top edge. It should grip without forcing.
-      If it's loose or too tight, stop and tell Ryan.
+      Skip this one. It's only for checking the clip on Ryan's monitor, and Ryan is
+      measuring the monitor himself instead.
 
   fixed_vertical-seam.stl    +  fit_vertical-seam_0.10mm / 0.15mm / 0.20mm
   fixed_horizontal-seam.stl  +  fit_horizontal-seam_0.10mm / 0.15mm / 0.20mm
