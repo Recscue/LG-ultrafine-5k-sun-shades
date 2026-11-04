@@ -2,6 +2,7 @@ SUN SHIELD - PRINT FILES
 
 Filament: PETG (dry it first). Print everything in the same filament and settings.
 Print every file exactly as it opens. Don't use Auto Orient and don't lay parts flat.
+Don't turn on fuzzy skin: it roughens the walls enough to ruin the joint fits.
 
 
 STEP 1: TEST PRINTS (one plate)
