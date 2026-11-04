@@ -559,54 +559,62 @@ def tilt_about_pivot(m, z0):
     return m.transform(tilt_matrix(z0).tolist())
 
 
+SHELF_FRONT_AHEAD = 23.0   # front edge, measured along the aim from the camera centre
+SCREW_SEAT = 4.0           # plastic left under the camera at the screw, above the head pocket
+
+
 def camera_shelf():
+    """One solid wedge: a single tilted top plane, a flat bottom flush with the saddle's
+    front lip, fused to the saddle top and the fin behind. Its front edge is square to the
+    camera's aim, so lining the camera's front up with it sets the yaw. A pocket from
+    below takes the 1/4-20 screw head."""
     z0 = WALL + SHELF_LIFT
+    ztop = z0 + SHELF_T
     xb = MONITOR_W - SHELF_BACK_W
     xf = xb + (FIN_F - SHELF_FRONT)                 # 45 deg outer side, prints unsupported
     us = np.linspace(0.0, SHELF_OVER, 11)
     back = [(MONITOR_W + u, min(FIN_F, _shelf_back_limit(u))) for u in us]
-    pts = [(xf, SHELF_FRONT), (MONITOR_W + SHELF_OVER, SHELF_FRONT)] + back[::-1] + [(xb, FIN_F)]
+    # outline reaches well forward; the aim-square front edge below trims it, so the
+    # front is one clean line
+    far = -200.0
+    pts = [(xb + (FIN_F - far), far), (MONITOR_W + SHELF_OVER, far)] + back[::-1] + [(xb, FIN_F)]
     plan = CrossSection([pts])
-    # Right edge: one straight line from the web's end at the pivot to the front-right
-    # corner, so no thin unsupported tongue sticks out beside the spine.
+    # right edge: straight from the saddle's end at the pivot to the front-right corner
     ub, vb = -INNER_SADDLE_STOP - 0.7, SHELF_PIVOT_Y
     uf, vf = SHELF_OVER, SHELF_FRONT
     k = (uf - ub) / (vb - vf)
     big = 400.0
-    hp = [(MONITOR_W + ub + k * (vb - v), v) for v in (-big, big)] + [(-5000, big), (-5000, -big)]
-    area = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(hp, hp[1:] + hp[:1]))
-    plan = plan ^ CrossSection([hp if area > 0 else hp[::-1]])
-    front_plan = plan ^ rect(-5000, 5000, -5000, SHELF_PIVOT_Y)
-    # tilted plate + front lip, with the screw hole square to the plate
-    plate = front_plan.extrude(SHELF_T).translate([0, 0, z0])
-    lip = CrossSection([[(xf, SHELF_FRONT), (MONITOR_W + SHELF_OVER, SHELF_FRONT),
-                         (MONITOR_W + SHELF_OVER, SHELF_FRONT + 2.4), (xf - 2.4, SHELF_FRONT + 2.4)]])
-    if SHELF_LIP > 0:
-        plate = plate + lip.extrude(SHELF_LIP + 0.01).translate([0, 0, z0 + SHELF_T - 0.01])
-    hole = CrossSection.circle(HOLE_D / 2, 48).translate([MONITOR_W + CAM_U, CAM_V])
-    plate = plate - hole.extrude(SHELF_T + SHELF_LIP + 4).translate([0, 0, z0 - 2])
-    # Aiming line: a 0.6 mm groove from the hole toward you. Line the camera's front up
-    # square to it before tightening the screw.
+    plan = plan ^ ccw([(MONITOR_W + ub + k * (vb - v), v) for v in (-big, big)]
+                      + [(-5000, big), (-5000, -big)])
+    # front edge square to the aim
     fx, fy = -math.sin(SHELF_YAW), -math.cos(SHELF_YAW)
     cx, cy = MONITOR_W + CAM_U, CAM_V
-    L, w = 16.0, 0.6
+    ox, oy = cx + fx * SHELF_FRONT_AHEAD, cy + fy * SHELF_FRONT_AHEAD
     nx, ny = -fy, fx
-    s0 = HOLE_D / 2 + 2.0
-    groove = ccw([(cx + fx * s0 + nx * w, cy + fy * s0 + ny * w),
-                  (cx + fx * (s0 + L) + nx * w, cy + fy * (s0 + L) + ny * w),
-                  (cx + fx * (s0 + L) - nx * w, cy + fy * (s0 + L) - ny * w),
-                  (cx + fx * s0 - nx * w, cy + fy * s0 - ny * w)])
-    plate = plate - groove.extrude(1.0).translate([0, 0, z0 + SHELF_T - 0.6])
-    plate = tilt_about_pivot(plate, z0)
-    above = tilt_about_pivot(box(-5000, 5000, -5000, SHELF_PIVOT_Y, z0 + SHELF_T, z0 + 200), z0)
-    # flat back strip over the saddle, fused to the fin and the saddle's top plate
-    back_plan = plan ^ rect(xb - 1, MONITOR_W - INNER_SADDLE_STOP, Y_OUT_F, FIN_F)
-    web = back_plan.extrude(SHELF_LIFT + SHELF_T + 0.02).translate([0, 0, WALL - 0.01]) - above
-    # criss-cross grid: bottom flush with the saddle lip's bottom edge, top meets the
-    # tilted plate's underside
-    grid = shelf_grid(z0 + SHELF_T) - above
-    hole_cyl = tilt_about_pivot(hole.extrude(60).translate([0, 0, z0 - 30]), z0)
-    return plate + web + (grid - hole_cyl)
+    plan = plan ^ ccw([(ox + nx * big, oy + ny * big), (ox - nx * big, oy - ny * big),
+                       (ox - nx * big - fx * big, oy - ny * big - fy * big),
+                       (ox + nx * big - fx * big, oy + ny * big - fy * big)])
+    zb = -FRONT_LIP
+    solid = plan.extrude(ztop + 120 - zb).translate([0, 0, zb])
+    # below the saddle's front lip line it may reach down to the lip bottom; behind it,
+    # it sits on the saddle top (never down into the monitor)
+    floor = (box(-5000, 5000, -5000, Y_OUT_F, zb, 500)
+             + box(-5000, 5000, -5000, 5000, 0.0, 500))
+    solid = solid ^ floor
+    above = tilt_about_pivot(box(-5000, 5000, -5000, 5000, ztop, ztop + 400), z0)
+    solid = solid - above
+    # Toward the corner, where the right panel's lip swings under at wide angles, the
+    # underside rises at 45 deg (prints unsupported) up to the plate's own thickness.
+    xc = MONITOR_W + CAM_U + SCREW_HEAD_R + 2.0     # starts just past the screw-head pocket
+    under = CrossSection([[(xc, zb - 1), (xc + 400, zb - 1), (xc + 400, zb - 1 + 400)]]
+                         ).extrude(800).rotate([90, 0, 0]).translate([0, 400, 0])
+    slab = tilt_about_pivot(box(-5000, 5000, -5000, 5000, z0, ztop), z0)
+    solid = (solid - under) + (solid ^ slab)
+    hole = CrossSection.circle(HOLE_D / 2, 48).translate([cx, cy])
+    hole_cyl = tilt_about_pivot(hole.extrude(80).translate([0, 0, ztop - 60]), z0)
+    head = CrossSection.circle(SCREW_HEAD_R, 64).translate([cx, cy])
+    pocket = tilt_about_pivot(head.extrude(80).translate([0, 0, ztop - SCREW_SEAT - 80]), z0)
+    return solid - hole_cyl - pocket
 
 
 def outline():
