@@ -1,47 +1,43 @@
 SUN SHIELD - PRINT FILES
 
 Filament: PETG (dry it first). Print everything in the same filament and settings.
-Print every file exactly as it opens. Don't use Auto Orient and don't lay parts flat.
-Don't turn on fuzzy skin: it roughens the walls enough to ruin the joint fits.
+
+Each step has ready-to-print PLATE files (.3mf). Open one in Bambu Studio and every part
+is already on the bed, standing the right way and spaced out. Just add the brim and
+support settings below and slice.
+  - Don't use Auto Orient or Arrange: both undo the orientation the parts were designed for.
+  - Don't turn on fuzzy skin: it roughens the walls enough to ruin the joint fits.
+The single-part STLs are in each "individual-parts" folder, only if you need one again.
 
 
-STEP 1: TEST PRINTS (one plate)
+STEP 1: TEST PRINTS
 Folder: step-1_test-prints
+  Open test-plate.3mf (4 small pieces).
 
-  fixed_seam.stl  +  fit_seam_0.10mm / 0.15mm / 0.20mm
-      The "fixed" piece is the same for all three tests. Try each "fit" piece in it.
-      The notches on the edge also mark the size: 1 = 0.10, 2 = 0.15, 3 = 0.20.
-
+  It has one "fixed" piece and three "fit" pieces. Try each fit piece in the fixed one.
+  The notches on each fit piece mark its size: 1 = 0.10, 2 = 0.15, 3 = 0.20.
   Pick the TIGHTEST one that slides together by hand with no visible gap at the front.
 
 
 STEP 2: THE SHIELD
 Folder: step-2_full-shield
-
   Open ONLY the folder matching the size you picked in step 1:
       0.10mm_1-notch    0.15mm_2-notch    0.20mm_3-notch
-  Don't mix parts from different size folders.
 
-  Parts, numbered from the outside edge toward the middle:
-      1   side extension (one piece)
-      2   outer piece
-      3   middle piece (notch for the monitor's built-in camera)
-      4   inner piece (has the hinge knuckles)
-      5   webcam shelf (left folder only, separate part)
+  Print its four plates:
+      plate-A_outer-and-middle.3mf         4 parts   brim 10 mm
+      plate-B_inner-and-webcam-shelf.3mf   3 parts   brim 10 mm
+      plate-C_left-side-extension.3mf      1 part    no brim (it fills the bed)
+      plate-D_right-side-extension.3mf     1 part    no brim
+  Brim on A and B: those parts stand on the tips of their joints, so they need it.
 
-  Plates:
-      Plate A: both 2 and both 3 pieces, standing on their seam end (4 parts)
-      Plate B: both 4 pieces standing on their seam end, plus the webcam shelf
-               flat on its bottom (3 parts)
-      Plate C: the left 1 piece, diagonally across the bed, on its flat outer edge
-      Plate D: the right 1 piece, same way
-  Brim: 10 mm on plates A and B (those parts stand on the tips of their joints).
-        No brim on C and D (the diagonal fills the bed, and the flat edge holds it).
-  Supports: only under the rounded corners of the 1 pieces, where they meet the bed.
+  Supports: only on plates C and D, under the rounded corner where the part
+  meets the bed. Paint them there, or use tree supports set to "on build plate only".
+  Before printing, slice plate A once and check it doesn't add supports anywhere else.
 
 
 SHIPPING TO RYAN
-  Don't assemble anything. Ship the pieces separate, packed flat.
+  Don't assemble anything. Ship the pieces separately, packed flat.
   Wrap each piece on its own (bubble wrap or foam): the thin back edge along each
   seam breaks easily.
 
