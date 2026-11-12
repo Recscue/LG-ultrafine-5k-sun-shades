@@ -41,7 +41,9 @@ for name, m in (("vert-left", left_v), ("vert-right", right_v)):
     assert len(m.decompose()) == 1, f"{tag} {name} is not one body"
     # same orientation as the real parts (panel standing on its end), so the coupon tests
     # the same mix of layer-height and XY accuracy the full set will see
-    m = B.to_print(m, False)
+    # fit pieces stand on their flat cut end (tails up): tails-down leaves a flat 49 mm
+    # roof over the gap between the tails. The fixed piece is clean as exported.
+    m = B.to_print(m, name == "vert-right")
     tm = B.to_trimesh(m)
     assert tm.is_watertight
     # horiz-top and vert-left take no clearance, so they're identical at every fit:
