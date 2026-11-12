@@ -12,7 +12,7 @@ The single-part STLs are in each "individual-parts" folder, only if you need one
 
 STEP 1: TEST PRINTS
 Folder: step-1_test-prints
-  Open test-plate.3mf (4 small pieces).
+  Open test-plate.3mf (4 small pieces). Add a 5 mm brim (they're tall and thin). No supports.
 
   It has one "fixed" piece and three "fit" pieces. Try each fit piece in the fixed one.
   The notches on each fit piece mark its size: 1 = 0.10, 2 = 0.15, 3 = 0.20.
