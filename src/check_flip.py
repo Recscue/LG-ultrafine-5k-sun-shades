@@ -1,5 +1,5 @@
 """Compare each print file as exported and flipped end for end: list the downward faces
-steeper than 45 deg that aren't on the bed, as (area cm2, span mm, height mm)."""
+steeper than 45 deg that aren't on the bed, as (area cm2, length mm, depth mm, height mm)."""
 import sys
 
 import numpy as np
@@ -16,7 +16,7 @@ def patches(m):
     for p in sub.split(only_watertight=False):
         if p.area > 20:
             e = p.extents
-            out.append((round(p.area / 100, 1), round(max(e[0], e[1]), 1), round(p.bounds[0][2], 1)))
+            out.append((round(p.area / 100, 1), round(max(e[0], e[1]), 1), round(min(e[0], e[1]), 1), round(p.bounds[0][2], 1)))
     return sorted(out, reverse=True)[:4]
 
 

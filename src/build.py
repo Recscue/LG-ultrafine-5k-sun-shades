@@ -58,6 +58,7 @@ _FIT = os.environ.get("FIT")          # override for the joint test coupons
 # close to zero clearance. 0.15 is the P2S default; the coupon set tests 0.10-0.20.
 JOINT_CLEAR = float(_FIT) if _FIT else (0.2 if MJF else 0.15)
 LAP = 6.0              # back layer is cut straight, this far past the dovetail band
+BACK_BELOW = 1.0       # back cut sits this far below the dovetail band
 LAP_CLEAR = JOINT_CLEAR                # gap between the overlapping layers, front to back
 LAP_SPLIT_FROM_FRONT = None   # where the two layers split, from the fin front
 
@@ -251,7 +252,68 @@ def _poly_region(left, right, clear):
     return m
 
 
+def seam_plus(front, c):
+    """Region owned by the +X piece at one seam, with clearance c taken off it. The +X piece
+    prints standing on this seam, so every part of its end either sits on the bed (at
+    xc = xa - BACK_BELOW) or rises from it at 45 deg or steeper.
+      Tail zone:  front layer on the dovetail line, back layer straight at xc. Each piece
+                  holds part of the back, so every socket roof in the front layer has the
+                  same piece's back wall right behind it.
+      Clip (Z<0): both layers straight at xc, below the monitor's top edge.
+      Above the clip and along the top rim: one cut through the whole thickness, leaning
+                  45 deg (a scarf). Light can't pass a leaning cut, and the +X piece's end
+                  is a 45 deg slope that starts on the bed at the back face."""
+    xa = front[0][0]
+    start, z_end = front[1][1], front[-3][1]   # z_end: top of the last -X tail
+    xc = xa - BACK_BELOW
+    ys, big = FIN_MID, 5000.0
+    f2 = ccw(front + [(big, 2000.0), (big, -2000.0)])
+    if c:
+        f2 = f2.offset(-c, JoinType.Miter)
+    tail_f = xz_extrude(f2) ^ box(-big, big, -300, ys, start, z_end)
+    tail_b = box(xc + c, big, ys, 300, start, z_end)
+    clip = box(xc + c, big, -300, 300, -big, 0.0)
+
+    def scarf(ymax, z0, z1):
+        x0 = xc + c * math.sqrt(2)
+        cs = ccw([(x0 + ymax + 300, -300.0), (big, -300.0), (big, 300.0), (x0, 300.0), (x0, ymax)])
+        return cs.extrude(z1 - z0).translate([0, 0, z0])
+
+    return (tail_f + tail_b + clip + scarf(Y_OUT_B, 0.0, start)
+            + scarf(FIN_B + BACK_RIB, z_end, 2000.0))
+
+
 def region(left, right):
+    """Piece region between two seams. The +X piece of each seam takes the whole
+    clearance: the offsets in seam_plus cover the dovetail flanks and the scarf, and the
+    -X piece's region shifted by the clearance covers the steps between zones (in Z) and
+    the gap between the -X piece's front layer and the +X piece's back layer (in Y)."""
+    allm = box(-5000, 5000, -300, 300, -5000, 5000)
+    m = allm
+    if left is not None:
+        c = JOINT_CLEAR
+        L0 = allm - seam_plus(left, 0.0)
+        R = seam_plus(left, c) - L0.translate([0, 0, c]) - L0.translate([0, 0, -c])
+        # back layer behind the -X piece's front layer: clear it in Y, edges included
+        back = box(-5000, 5000, FIN_MID, 300, -5000, 5000)
+        for dx in (-c, 0.0, c):
+            for dz in (-c, 0.0, c):
+                R = R - (L0.translate([dx, LAP_CLEAR, dz]) ^ back)
+        # where a zone step meets the leaning scarf, clear the corner along the scarf's normal
+        k = c / math.sqrt(2)
+        bands = None
+        for z0 in (0.0, left[1][1], left[-3][1]):
+            b = box(-5000, 5000, -300, 300, z0 - 2 * c, z0 + 2 * c)
+            bands = b if bands is None else bands + b
+        for dz in (-c, c):
+            R = R - (L0.translate([k, k, dz]) ^ bands)
+        m = m ^ R
+    if right is not None:
+        m = m - seam_plus(right, 0.0)
+    return m
+
+
+def region_old(left, right):
     """Shiplap piece region. Front layer (Y < FIN_MID, carries the facets) is cut on the
     dovetail line; back layer on the same line shifted LAP. Each side's tongue sits
     behind or in front of its neighbour with LAP_CLEAR between them in Y."""
@@ -391,7 +453,7 @@ def spine(panel, parity):
 # --------------------------------------------------------------------------------------
 def panel(parity):
     saddle_end = MONITOR_W - INNER_SADDLE_STOP
-    body = yz_extrude(saddle_profile(), 0.0, saddle_end)
+    body = yz_extrude(saddle_profile(), -BACK_BELOW, saddle_end)
     fin = box(-EXT_OVER, AXIS_X, FIN_F, FIN_B, WALL - 0.5, HEIGHT)
     ext_low = box(-EXT_OVER, -1.0, FIN_F, FIN_B, -EXT_DROP, WALL)
     # One continuous rim: the front lip runs along the top, around the rounded corner and
@@ -684,6 +746,10 @@ def pieces(parity):
     bounds = [(None, s[0]), (s[0], s[1]), (s[1], s[2]), (s[2], None)]
     names = ["extension", "outer", "middle-camera", "inner"]
     out = {n: p ^ region(a, b) for n, (a, b) in zip(names, bounds)}
+    # the side extension doesn't sit on the monitor: the scarf above the clip must not
+    # hand it a sliver of the clip's top plate (in front of the fin)
+    out["extension"] = out["extension"] - (yz_extrude(saddle_profile(), -BACK_BELOW - 0.01, 80.0)
+                                           ^ box(-5000, 5000, -300, FIN_F, -5000, 5000))
     # The side extension stays one piece (330 mm tall). It prints lying on its flat outer
     # edge, diagonally across the bed, so it needs no horizontal seam: a seam there would put
     # dovetail tails sideways on the bed, and a sideways tail always starts in mid-air.
