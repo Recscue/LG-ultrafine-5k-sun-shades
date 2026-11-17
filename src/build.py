@@ -57,8 +57,10 @@ _FIT = os.environ.get("FIT")          # override for the joint test coupons
 # 6.0 mm printing at 5.9 mm, with a snug fit at +0.15 mm, so 0.1 mm per side would print
 # close to zero clearance. 0.15 is the P2S default; the coupon set tests 0.10-0.20.
 JOINT_CLEAR = float(_FIT) if _FIT else (0.2 if MJF else 0.15)
+# The back layer starts one layer below the front so no straight path lets light through
+# the cut; a 45 deg chamfer joins them. It must exceed the clearance, or light passes.
+BACK_BELOW = round(JOINT_CLEAR + 0.1, 3)
 LAP = 6.0              # back layer is cut straight, this far past the dovetail band
-BACK_BELOW = 1.0       # back cut sits this far below the dovetail band
 LAP_CLEAR = JOINT_CLEAR                # gap between the overlapping layers, front to back
 LAP_SPLIT_FROM_FRONT = None   # where the two layers split, from the fin front
 
@@ -271,7 +273,18 @@ def seam_plus(front, c):
     if c:
         f2 = f2.offset(-c, JoinType.Miter)
     tail_f = xz_extrude(f2) ^ box(-big, big, -300, ys, start, z_end)
+    # back layer: rises at 45 deg from the bed toward the back face instead of starting
+    # on a straight line. A straight line has to sit apart from the front cut (or light
+    # passes), and that step left the front layer floating over the bed. The 45 deg rise
+    # prints as an ordinary chamfer and still blocks every straight path through.
+    # The back layer has to start below the front layer, or light passes along the cut,
+    # and it can't lean over the front layer, or the pieces can't slide together. So the
+    # front layer meets the back with a 45 deg chamfer instead of a step: nothing of this
+    # piece floats over the bed, and the -X piece is always in front of it.
     tail_b = box(xc + c, big, ys, 300, start, z_end)
+    r2 = c * math.sqrt(2)
+    tail_w = ccw([(xc + r2, ys + 0.01), (xa + r2, ys - BACK_BELOW), (xa + r2 + 0.01, ys - BACK_BELOW),
+                  (xa + r2 + 0.01, ys + 0.01)]).extrude(z_end - start).translate([0, 0, start])
     clip = box(xc + c, big, -300, 300, -big, 0.0)
 
     def scarf(ymax, z0, z1):
@@ -279,8 +292,12 @@ def seam_plus(front, c):
         cs = ccw([(x0 + ymax + 300, -300.0), (big, -300.0), (big, 300.0), (x0, 300.0), (x0, ymax)])
         return cs.extrude(z1 - z0).translate([0, 0, z0])
 
-    return (tail_f + tail_b + clip + scarf(Y_OUT_B, 0.0, start)
-            + scarf(FIN_B + BACK_RIB, z_end, 2000.0))
+    return (tail_f + tail_b + tail_w + clip + scarf(Y_OUT_B, 0.0, start)
+            # top zone: the scarf starts at the fin's own back face, and only the 3 mm rim
+            # band along the top edge, where the back rib is, starts at the rib's back face.
+            # A scarf sized for the rib across the whole top zone left the fin starting
+            # 10 mm up with nothing under it.
+            + scarf(FIN_B, z_end, HEIGHT - 3.05) + scarf(FIN_B + BACK_RIB, HEIGHT - 3.05, 2000.0))
 
 
 def region(left, right):
@@ -296,9 +313,10 @@ def region(left, right):
         R = seam_plus(left, c) - L0.translate([0, 0, c]) - L0.translate([0, 0, -c])
         # back layer behind the -X piece's front layer: clear it in Y, edges included
         back = box(-5000, 5000, FIN_MID, 300, -5000, 5000)
+        front = box(-5000, 5000, -300, FIN_MID, -5000, 5000)
         for dx in (-c, 0.0, c):
             for dz in (-c, 0.0, c):
-                R = R - (L0.translate([dx, LAP_CLEAR, dz]) ^ back)
+                R = R - L0.translate([dx, LAP_CLEAR, dz])
         # where a zone step meets the leaning scarf, clear the corner along the scarf's normal
         k = c / math.sqrt(2)
         bands = None
@@ -476,7 +494,11 @@ def panel(parity):
         p = p + shelf_rail()
     # camera notch in the front lip, centred on the monitor
     cx = MONITOR_W / 2
-    p = p - box(cx - CAM_NOTCH_W / 2, cx + CAM_NOTCH_W / 2, Y_OUT_F - 1, Y_IN_F + 0.01, -FRONT_LIP - 1, 0.01)
+    # Both ends slope 45 deg (wider at the lip's free edge), so where the lip resumes it
+    # grows out from the clip plate instead of starting as a flat 6 mm ledge when printed
+    w, d = CAM_NOTCH_W / 2, FRONT_LIP + 1
+    notch = ccw([(cx - w, 0.01), (cx + w, 0.01), (cx + w + d, -d), (cx - w - d, -d)])
+    p = p - (xz_extrude(notch) ^ box(-5000, 5000, Y_OUT_F - 1, Y_IN_F + 0.01, -5000, 5000))
     p = spine(p, parity)
     return p, lat
 
@@ -810,9 +832,21 @@ def main():
     for side, parts in (("left", left), ("right", right)):
         for n, m in parts.items():
             name = f"{side}_{n}.stl"
-            if n == "webcam-shelf":      # prints the right way up, on its flat bottom
-                b = m.bounding_box()
-                mm = m.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+            if n == "webcam-shelf":
+                # prints upside down, on its tilted top face (the face the camera sits on):
+                # upright, the thin corner of the plate past the 45 deg underside would
+                # hang over nothing
+                R = tilt_matrix(WALL + SHELF_LIFT)
+                nrm = np.array(R)[:, :3] @ np.array([0.0, 0.0, 1.0])
+                ax = np.cross(nrm, [0.0, 0.0, -1.0])
+                ang = math.degrees(math.acos(max(-1.0, min(1.0, -nrm[2]))))
+                tm = to_trimesh(m)
+                tm.apply_transform(trimesh.transformations.rotation_matrix(
+                    math.radians(ang), ax / np.linalg.norm(ax)))
+                tm.apply_translation(-np.array([(tm.bounds[0][0] + tm.bounds[1][0]) / 2,
+                                                (tm.bounds[0][1] + tm.bounds[1][1]) / 2,
+                                                tm.bounds[0][2]]))
+                mm = to_manifold(tm)
             else:
                 mm = to_print(m, flips[side][n])
             report.append((name, *export(mm, name)))
