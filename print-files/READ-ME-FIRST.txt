@@ -27,6 +27,8 @@ Folder: step-2_full-shield
   Print its four plates:
       plate-A_outer-and-middle.3mf         4 parts   brim 10 mm
       plate-B_inner-and-webcam-shelf.3mf   3 parts   brim 10 mm
+                                           (the webcam shelf prints upside down,
+                                           camera face on the bed; leave it that way)
       plate-C_left-side-extension.3mf      1 part    no brim (it fills the bed)
       plate-D_right-side-extension.3mf     1 part    no brim
   Brim on A and B: those parts stand on the tips of their joints, so they need it.
